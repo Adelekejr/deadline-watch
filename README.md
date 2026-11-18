@@ -70,12 +70,12 @@ deadline-miss counter on the right. Start the rogue task:
 | Run | Guard | Measured control-loop misses |
 |---|---|---|
 | Rogue off | n/a | 0.1–0.6% |
-| Rogue on | off | 23–39% |
-| Rogue on | on | 5–20%, rogue visibly throttled and logged |
+| Rogue on | off | 23–54% |
+| Rogue on | on | 5–21%, rogue visibly throttled and logged |
 
-Three 30 s runs on QEMU gave guard off 38.9%, 22.6%, 35.5%, and guard
-on 9.8%, 4.7%, 19.6%. Exact percentages move with host load under
-software emulation, so the claim is the improvement: the guard cuts
+Four 30 s runs on QEMU gave guard off 38.9%, 22.6%, 35.5%, 54.3%, and
+guard on 9.8%, 4.7%, 19.6%, 20.5%. Exact percentages move with host load
+under software emulation, so the claim is the improvement: the guard cuts
 misses roughly 2–5× and throttles the rogue every time.
 
 The video (under 3 minutes) is a screen recording of the real QEMU run,
@@ -158,9 +158,9 @@ deadline-watch/
   work takes ~1 ms.
 - The miss numbers are measured on QEMU under TCG software emulation,
   and they move run to run with host load (guard off 38.9%, 22.6%,
-  35.5%; guard on 9.8%, 4.7%, 19.6%). The stable finding is the
-  improvement: the guard cuts misses roughly 2–5× and throttles the
-  rogue. The residual misses with the guard on are mostly watchdog
+  35.5%, 54.3%; guard on 9.8%, 4.7%, 19.6%, 20.5%). The stable finding
+  is the improvement: the guard cuts misses roughly 2–5× and throttles
+  the rogue. The residual misses with the guard on are mostly watchdog
   starvation from host stalls, and the rogue-off baseline shows the
   same pattern (0.1–0.6%). If the contrast is not clean on QEMU, tune
   the rogue duty cycle, the priorities, or the workload.
