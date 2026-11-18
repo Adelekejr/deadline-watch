@@ -97,8 +97,8 @@ make            # builds ./deadline-watch for x86_64 (qcc -Vgcc_ntox86_64)
 
 ```sh
 ./deadline-watch                      # guard on, rogue on, 30 s
-./deadline-watch --guard=off          # measure only: expect 40%+ misses
-./deadline-watch --rogue=off          # control-only run: expect 0 misses
+./deadline-watch --guard=off          # measure only: expect roughly 20-55% misses
+./deadline-watch --rogue=off          # control-only run: expect under 1% misses
 ./deadline-watch --duration=60 --log=run2.csv
 ```
 
