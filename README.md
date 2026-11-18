@@ -7,7 +7,7 @@ any task that overruns, and keeps a black-box record of every miss.
 ## The problem
 
 In safety-critical systems, one buggy task that hogs the CPU can silently
-break every other task's deadlines — and nothing in the system stops it or
+break every other task's deadlines, and nothing in the system stops it or
 records it. A missed deadline in a car, a medical device or a robot is not
 a slow page. It is a failure.
 
@@ -28,10 +28,10 @@ One process, four kinds of thread:
   completion pulses from the workers and a 1 ms watchdog timer pulse.
   It timestamps every completion against its deadline, counts misses,
   and enforces.
-- **Control loop** — 10 ms period, the critical thread. Does a fixed
+- **Control loop:** 10 ms period, the critical thread. Does a fixed
   amount of work each cycle and reports completion with a pulse.
-- **Sensor thread** — 50 ms period, feeds the loop, also tracked.
-- **Rogue task** — deliberately greedy: one thread per online CPU, at a
+- **Sensor thread:** 50 ms period, feeds the loop, also tracked.
+- **Rogue task:** deliberately greedy: one thread per online CPU, at a
   priority *above* the control loop, burning a configurable share of
   every 10 ms window. With the guard off it starves the loop.
 
@@ -55,25 +55,25 @@ graph.
 ### A note on Adaptive Partitioning
 
 The original design used QNX Adaptive Partitioning (CPU budgets per
-partition). **QNX OS 8.0 does not support Adaptive Partitioning** — the
+partition). **QNX OS 8.0 does not support Adaptive Partitioning.** The
 8.0 `SchedCtl()` reference lists only CPU-offlining commands, and the IDE
 guide says so explicitly. So this build enforces with strict-priority
 scheduling instead of kernel budgets. The idea and the demo are unchanged;
 only the mechanism is different. Full reasoning and evidence:
 [docs/design-8.0.md](docs/design-8.0.md).
 
-## The demo (target numbers — to be measured on QEMU)
+## The demo (target numbers, to be measured on QEMU)
 
 Split screen: a live jitter graph of the control loop on the left, the
 deadline-miss counter on the right. Start the rogue task:
 
 | Run | Guard | Expected control-loop misses |
 |---|---|---|
-| Rogue off | — | 0 |
+| Rogue off | n/a | 0 |
 | Rogue on | off | 40%+ |
 | Rogue on | on | 0, rogue visibly throttled and logged |
 
-The video (under 3 minutes) is a screen recording of the real QEMU run —
+The video (under 3 minutes) is a screen recording of the real QEMU run,
 never an AI-generated video.
 
 ## Build
