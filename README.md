@@ -1,18 +1,8 @@
 # DeadlineWatch
 
-A runtime deadline supervisor for **QNX 8.0** (QEMU). It watches every
-real-time thread, isolates any task that overruns its deadline, and keeps
-a black-box record — while the system is under attack.
-
-**Contest:** QNX Global Hackathon · **Category:** Low-level Software ·
-**Prize pool:** $50,000+ · **Deadline:** 15 Dec 2026, 14:00 ET (20:00 WAT) ·
-**Site:** https://qnx.devpost.com/
-
-> **Status — Stage 1 skeleton (18 Nov 2026).** The supervisor, the three
-> threads and the black-box log are written. The code has **not yet been
-> compiled against an installed SDP** — the myQNX QNX Everywhere licence
-> was requested 18 Nov and is pending deployment. Nothing here has run on
-> QEMU yet, and the demo numbers below are targets, not measurements.
+A runtime deadline supervisor for QNX 8.0. It watches every real-time
+thread, checks whether each one finished before its deadline, throttles
+any task that overruns, and keeps a black-box record of every miss.
 
 ## The problem
 
@@ -20,6 +10,15 @@ In safety-critical systems, one buggy task that hogs the CPU can silently
 break every other task's deadlines — and nothing in the system stops it or
 records it. A missed deadline in a car, a medical device or a robot is not
 a slow page. It is a failure.
+
+## The solution
+
+DeadlineWatch is a supervisor process that runs alongside the real-time
+threads. Every cycle it checks, per thread, whether the work finished
+before its deadline. It counts and times the misses, and when a thread
+misses twice in a row it demotes that thread's priority so the critical
+work recovers. Every cycle and every enforcement action is written to a
+timestamped log, so a missed deadline is never silent and never lost.
 
 ## How it works
 
@@ -53,15 +52,15 @@ rogue demoted + a THROTTLE record in the black-box log.
 overrun, detail). `host/render.py` turns it into a summary and a jitter
 graph.
 
-### A note on Adaptive Partitioning — read this first
+### A note on Adaptive Partitioning
 
 The original design used QNX Adaptive Partitioning (CPU budgets per
 partition). **QNX OS 8.0 does not support Adaptive Partitioning** — the
 8.0 `SchedCtl()` reference lists only CPU-offlining commands, and the IDE
 guide says so explicitly. So this build enforces with strict-priority
-scheduling instead of kernel budgets. The idea, the demo and the category
-are unchanged; only the mechanism is different. Full reasoning, evidence
-and the score revision: [docs/design-8.0.md](docs/design-8.0.md).
+scheduling instead of kernel budgets. The idea and the demo are unchanged;
+only the mechanism is different. Full reasoning and evidence:
+[docs/design-8.0.md](docs/design-8.0.md).
 
 ## The demo (target numbers — to be measured on QEMU)
 
@@ -79,11 +78,10 @@ never an AI-generated video.
 
 ## Build
 
-Prerequisites: a deployed myQNX QNX Everywhere licence, QNX SDP 8.0
-(`com.qnx.qnx800`), the QEMU Quick Start Target Image
-(`com.qnx.qnx800.quickstart.qemu`), and QEMU on an Ubuntu 22.04/24.04
-host. Full install sequence: `~/workspace/hackathon-research/qnx-aps-apis.md`
-(kept out of this repo; it is build research, not submission material).
+Prerequisites: QNX SDP 8.0 (`com.qnx.qnx800`), the QEMU Quick Start
+Target Image (`com.qnx.qnx800.quickstart.qemu`), and QEMU on an Ubuntu
+22.04/24.04 host. The SDP is available with a free myQNX QNX Everywhere
+licence.
 
 ```sh
 source ~/qnx800/qnxsdp-env.sh
@@ -104,16 +102,13 @@ if it cannot set them, instead of running a misleading demo. Tune the
 run with `config/deadline-watch.conf` or flags (`--rogue-duty=N`,
 `--rogue-threads=N`, `--log=PATH`); see `--help`.
 
-**Getting the binary into the guest is still open.** The stock QEMU image
-has no working sshd, and the official QSTI docs do not give SSH/scp steps
-for a host-cross-compiled binary; the documented route is compiling
-self-hosted inside the guest (QNX Developer Desktop). The setup step will
-confirm which route works — either building the binary into the image or
-compiling it in the guest — before the demo is recorded.
+**Getting the binary into the guest.** The QSTI docs prescribe copying
+it in over SSH (`scp` to `qnxuser@<guest-ip>`). Whether sshd runs by
+default on the QEMU image is still to be confirmed on a booted guest;
+the fallback is a host HTTP server plus guest `curl`.
 
-**Getting the log back:** same open item as the binary (no sshd in the
-stock image). Planned: a small TCP helper. Until then, the log can be read
-from the guest console.
+**Getting the log back:** the same route in reverse (`scp` from the
+guest), or read it from the guest console.
 
 ## Render the log (on the host)
 
@@ -146,28 +141,17 @@ deadline-watch/
     design-8.0.md          # why there is no Adaptive Partitioning in 8.0
 ```
 
-## Submission
+## Honest limits
 
-- Public repo with an open-source licence (MIT, this repo).
-- Text description: what it does, why it matters, how it uses QNX
-  (strict-priority scheduling, pulses, `ClockCycles()`/`CLOCK_MONOTONIC`
-  measurement, watchdog semantics).
-- Demo video under 3 minutes on YouTube (public), recorded from the real
-  QEMU run.
-- Build/run instructions: QNX 8.0, target QEMU, toolchain
-  `qcc -Vgcc_ntox86_64` (GCC 12.x).
-- One category: Low-level Software.
-
-## Honest limits (Stage 1)
-
-- Not yet compiled against SDP 8.0; signatures are from the 8.0 docs and
-  must be verified against `$QNX_TARGET/usr/include` once installed.
+- The skeleton has not been compiled yet. QNX SDP 8.0 is installed and
+  the compile step is next; the API signatures come from the 8.0 docs
+  and must be verified against `$QNX_TARGET/usr/include` when it
+  compiles.
 - The control loop's workload is a stand-in compute loop; its iteration
   count (`control_work_iters`) must be calibrated on the target so the
   work takes ~1 ms.
 - The 40%+ / 0 miss numbers are targets. If the contrast is not clean on
-  QEMU, tune the rogue duty cycle, the priorities, or the workload —
-  that is the Days 9–10 job in the plan.
+  QEMU, tune the rogue duty cycle, the priorities, or the workload.
 - `SCHED_SPORADIC` (a possible kernel-budget analogue for the rogue) was
   not verified and is not used; it is a post-skeleton experiment.
 - No auto-restore: once demoted, the rogue stays demoted for the run.
