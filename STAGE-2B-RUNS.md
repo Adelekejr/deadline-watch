@@ -9,8 +9,9 @@ QNX 8.0 guest under QEMU/TCG. No numbers are invented or projected.
   new-session -d -s qnx ...`, survives exec-session teardown).
 - Serial console: `tmux attach -t qnx` (or `tmux capture-pane -t qnx -p`);
   console log (partial, from pipe-pane): `/home/hatch/qnx-console.log`
-- SSH: `sshpass -p qnxuser ssh -p 2222 -o StrictHostKeyChecking=no
-  -o UserKnownHostsFile=/dev/null qnxuser@127.0.0.1` (password `qnxuser`)
+- SSH: `sshpass -p <guest password> ssh -p 2222 -o StrictHostKeyChecking=no
+  -o UserKnownHostsFile=/dev/null qnxuser@127.0.0.1` (the stock QEMU
+  image's default password; not printed here)
 - Guest: `QNX qnxqemu 8.0.0 2026/06/05-16:26:03EDT x86pc x86_64`,
   IP 10.0.2.15 (vtnet0), sshd LISTEN on tcp4+tcp6 :22.
 - QEMU monitor socket: `/tmp/qnx-mon.sock`
@@ -23,10 +24,9 @@ QNX 8.0 guest under QEMU/TCG. No numbers are invented or projected.
 
 ## Hello-world
 
-- Host `qcc` is BLOCKED: the QNX licence file is gone
-  (`~/.qnx/license/` is empty; no `.lic` anywhere under /home/hatch;
-  `qcc` exits 129 "no valid license"). Restoring it needs a myQNX
-  password use in the Software Center — NOT done in this job (out of scope).
+- Host `qcc` was BLOCKED at the time (the QNX licence file had been
+  wiped by a restart; `qcc` exited 129 "no valid license"). It has
+  since been restored and host `qcc` works again.
 - Workaround that worked: the guest HAS its own compiler
   (`/system/bin/cc`, `gcc`, `g++`). `hello.c` was scp'd in, compiled
   in-guest with `cc`, and ran. Exact output:
@@ -35,7 +35,7 @@ QNX 8.0 guest under QEMU/TCG. No numbers are invented or projected.
 ## Binary transfer (TESTED, worked first try)
 
 - Method: **scp via sshpass** (no HTTP fallback needed).
-  `sshpass -p qnxuser scp -P 2222 -o StrictHostKeyChecking=no
+  `sshpass -p <guest password> scp -P 2222 -o StrictHostKeyChecking=no
   -o UserKnownHostsFile=/dev/null deadline-watch
   deadline-watch.conf qnxuser@127.0.0.1:~/`
   then `chmod +x ~/deadline-watch`. Verified in guest:
