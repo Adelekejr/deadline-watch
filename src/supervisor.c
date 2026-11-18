@@ -350,13 +350,13 @@ int main(int argc, char **argv)
     clock_gettime(CLOCK_MONOTONIC, &now);
     dw_log_row(&ctx, &now, "supervisor", "START", 0, 0, 0, "run begins");
 
-    ctx.chid = ChannelCreate(0);
+    ctx.chid = ChannelCreate(_NTO_CHF_FIXED_PRIORITY | _NTO_CHF_PRIVATE);
     if (ctx.chid == -1) {
         fprintf(stderr, "deadline-watch: ChannelCreate failed: %s\n",
                 strerror(errno));
         return 1;
     }
-    ctx.coid = ConnectAttach(ND_LOCAL_NODE, 0, ctx.chid,
+    ctx.coid = ConnectAttach(0, 0, ctx.chid,
                              _NTO_SIDE_CHANNEL, 0);
     if (ctx.coid == -1) {
         fprintf(stderr, "deadline-watch: ConnectAttach failed: %s\n",
@@ -379,7 +379,7 @@ int main(int argc, char **argv)
 
     /* 1 ms watchdog timer, delivered as a pulse on our own channel. */
     struct sigevent sev;
-    SIGEV_PULSE_INIT(&sev, ctx.coid, SIGEV_PULSE_PRIO_INHERIT,
+    SIGEV_PULSE_INIT(&sev, ctx.coid, ctx.cfg.supervisor_prio,
                      DW_PULSE_TIMER, 0);
     if (timer_create(CLOCK_MONOTONIC, &sev, &ctx.watchdog) != 0) {
         fprintf(stderr, "deadline-watch: timer_create failed: %s\n",
@@ -470,7 +470,7 @@ int main(int argc, char **argv)
                st->worst_lateness_us, mean);
     }
     printf("throttle events: %ld, rogue final priority: %d\n",
-           ctx->throttle_events, ctx.rogue_prio_current);
+           ctx.throttle_events, ctx.rogue_prio_current);
     printf("log: %s\n", ctx.cfg.log_path);
 
     ChannelDestroy(ctx.chid);
