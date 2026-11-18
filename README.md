@@ -69,9 +69,14 @@ deadline-miss counter on the right. Start the rogue task:
 
 | Run | Guard | Measured control-loop misses |
 |---|---|---|
-| Rogue off | n/a | 0.6% |
-| Rogue on | off | 38.9% |
-| Rogue on | on | 9.8%, rogue visibly throttled and logged |
+| Rogue off | n/a | 0.1–0.6% |
+| Rogue on | off | 23–39% |
+| Rogue on | on | 5–10%, rogue visibly throttled and logged |
+
+Two 30 s runs on QEMU gave guard off 38.9% then 22.6%, and guard on
+9.8% then 4.7%. Exact percentages move with host load under software
+emulation, so the claim is the improvement: the guard cuts misses about
+4–5× and throttles the rogue every time.
 
 The video (under 3 minutes) is a screen recording of the real QEMU run,
 never an AI-generated video.
@@ -151,10 +156,13 @@ deadline-watch/
 - The control loop's workload is a stand-in compute loop; its iteration
   count (`control_work_iters`) must be calibrated on the target so the
   work takes ~1 ms.
-- The miss numbers are measured on QEMU under TCG software emulation.
-  The residual misses with the guard on are mostly watchdog starvation
+- The miss numbers are measured on QEMU under TCG software emulation,
+  and they move run to run with host load (guard off 38.9% then 22.6%;
+  guard on 9.8% then 4.7%). The stable finding is the improvement:
+  the guard cuts misses about 4–5× and throttles the rogue. The
+  residual misses with the guard on are mostly watchdog starvation
   from host stalls, and the rogue-off baseline shows the same pattern
-  (0.6%). If the contrast is not clean on QEMU, tune the rogue duty
+  (0.1–0.6%). If the contrast is not clean on QEMU, tune the rogue duty
   cycle, the priorities, or the workload.
 - `SCHED_SPORADIC` (a possible kernel-budget analogue for the rogue) was
   not verified and is not used; it is a post-skeleton experiment.
