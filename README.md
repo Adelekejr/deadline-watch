@@ -71,12 +71,12 @@ deadline-miss counter on the right. Start the rogue task:
 |---|---|---|
 | Rogue off | n/a | 0.1–0.6% |
 | Rogue on | off | 23–39% |
-| Rogue on | on | 5–10%, rogue visibly throttled and logged |
+| Rogue on | on | 5–20%, rogue visibly throttled and logged |
 
-Two 30 s runs on QEMU gave guard off 38.9% then 22.6%, and guard on
-9.8% then 4.7%. Exact percentages move with host load under software
-emulation, so the claim is the improvement: the guard cuts misses about
-4–5× and throttles the rogue every time.
+Three 30 s runs on QEMU gave guard off 38.9%, 22.6%, 35.5%, and guard
+on 9.8%, 4.7%, 19.6%. Exact percentages move with host load under
+software emulation, so the claim is the improvement: the guard cuts
+misses roughly 2–5× and throttles the rogue every time.
 
 The video (under 3 minutes) is a screen recording of the real QEMU run,
 never an AI-generated video.
@@ -157,13 +157,13 @@ deadline-watch/
   count (`control_work_iters`) must be calibrated on the target so the
   work takes ~1 ms.
 - The miss numbers are measured on QEMU under TCG software emulation,
-  and they move run to run with host load (guard off 38.9% then 22.6%;
-  guard on 9.8% then 4.7%). The stable finding is the improvement:
-  the guard cuts misses about 4–5× and throttles the rogue. The
-  residual misses with the guard on are mostly watchdog starvation
-  from host stalls, and the rogue-off baseline shows the same pattern
-  (0.1–0.6%). If the contrast is not clean on QEMU, tune the rogue duty
-  cycle, the priorities, or the workload.
+  and they move run to run with host load (guard off 38.9%, 22.6%,
+  35.5%; guard on 9.8%, 4.7%, 19.6%). The stable finding is the
+  improvement: the guard cuts misses roughly 2–5× and throttles the
+  rogue. The residual misses with the guard on are mostly watchdog
+  starvation from host stalls, and the rogue-off baseline shows the
+  same pattern (0.1–0.6%). If the contrast is not clean on QEMU, tune
+  the rogue duty cycle, the priorities, or the workload.
 - `SCHED_SPORADIC` (a possible kernel-budget analogue for the rogue) was
   not verified and is not used; it is a post-skeleton experiment.
 - No auto-restore: once demoted, the rogue stays demoted for the run.
