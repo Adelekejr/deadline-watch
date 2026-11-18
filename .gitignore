@@ -1,0 +1,21 @@
+# Build outputs
+*.o
+*.a
+*.so
+deadline-watch
+*.ifs
+
+# Generated run data (logs and graphs are produced by real runs, not committed)
+*.log
+*.csv
+host/*.png
+
+# Python
+__pycache__/
+*.pyc
+
+# Editor / OS
+.DS_Store
+*~
+*.swp
+.vscode/
