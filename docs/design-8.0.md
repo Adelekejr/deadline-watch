@@ -33,8 +33,9 @@ Killed: the mechanism. No partitions, no partition budgets, no
 Survives: the idea, the demo, and the category. A runtime supervisor that
 watches real-time threads, enforces their deadlines while the system is
 under attack, and keeps a black-box record is still buildable on 8.0 —
-only the enforcement mechanism changes. The demo (0 missed deadlines with
-the guard on vs. 40%+ with it off) is unchanged in shape, and the entry
+only the enforcement mechanism changes. The demo (far fewer missed
+deadlines with the guard on than with it off, measured 9.8% vs 38.9%
+on QEMU) is unchanged in shape, and the entry
 stays in Low-level Software.
 
 ## The 8.0 redesign (what this repo builds)

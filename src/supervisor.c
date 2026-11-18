@@ -74,6 +74,8 @@ static void dw_check_throttle(dw_ctx_t *ctx, const struct timespec *now)
     dw_thread_state_t *ctl = &ctx->track[DW_THREAD_CONTROL];
     if (!ctx->cfg.guard_on)
         return;
+    if (ctx->n_rogue == 0)
+        return;   /* no rogue threads: nothing to demote, no enforcement event */
     if (ctl->consecutive_misses < DW_MISS_THRESHOLD)
         return;
 
@@ -86,13 +88,9 @@ static void dw_check_throttle(dw_ctx_t *ctx, const struct timespec *now)
         ctl->consecutive_misses = 0;   /* fresh count for the escalation check */
         ctl->clean_cycles = 0;
         char detail[160];
-        if (ctx->n_rogue == 0)
-            snprintf(detail, sizeof(detail),
-                     "no rogue threads running; nothing to demote");
-        else
-            snprintf(detail, sizeof(detail),
-                     "rogue demoted to prio %d (%d of %d threads)",
-                     ctx->cfg.rogue_demoted_prio, ok, ctx->n_rogue);
+        snprintf(detail, sizeof(detail),
+                 "rogue demoted to prio %d (%d of %d threads)",
+                 ctx->cfg.rogue_demoted_prio, ok, ctx->n_rogue);
         dw_log_row(ctx, now, "supervisor", "THROTTLE", ctl->expected_cycle,
                    0, ctl->worst_lateness_us, detail);
         return;

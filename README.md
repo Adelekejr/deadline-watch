@@ -62,16 +62,16 @@ scheduling instead of kernel budgets. The idea and the demo are unchanged;
 only the mechanism is different. Full reasoning and evidence:
 [docs/design-8.0.md](docs/design-8.0.md).
 
-## The demo (target numbers, to be measured on QEMU)
+## The demo (measured on QEMU, 30 s runs, 2 rogue threads, 85% duty)
 
 Split screen: a live jitter graph of the control loop on the left, the
 deadline-miss counter on the right. Start the rogue task:
 
-| Run | Guard | Expected control-loop misses |
+| Run | Guard | Measured control-loop misses |
 |---|---|---|
-| Rogue off | n/a | 0 |
-| Rogue on | off | 40%+ |
-| Rogue on | on | 0, rogue visibly throttled and logged |
+| Rogue off | n/a | 0.6% |
+| Rogue on | off | 38.9% |
+| Rogue on | on | 9.8%, rogue visibly throttled and logged |
 
 The video (under 3 minutes) is a screen recording of the real QEMU run,
 never an AI-generated video.
@@ -143,15 +143,19 @@ deadline-watch/
 
 ## Honest limits
 
-- The skeleton has not been compiled yet. QNX SDP 8.0 is installed and
-  the compile step is next; the API signatures come from the 8.0 docs
-  and must be verified against `$QNX_TARGET/usr/include` when it
-  compiles.
+- The skeleton has been compiled and run in the QEMU guest; the real
+  numbers are in the demo table above and in `STAGE-2B-RUNS.md`. Host
+  `qcc` is currently blocked: a restart wiped the licence file, so
+  host-side compiles need the licence restored first. The guest has
+  its own compiler as a fallback.
 - The control loop's workload is a stand-in compute loop; its iteration
   count (`control_work_iters`) must be calibrated on the target so the
   work takes ~1 ms.
-- The 40%+ / 0 miss numbers are targets. If the contrast is not clean on
-  QEMU, tune the rogue duty cycle, the priorities, or the workload.
+- The miss numbers are measured on QEMU under TCG software emulation.
+  The residual misses with the guard on are mostly watchdog starvation
+  from host stalls, and the rogue-off baseline shows the same pattern
+  (0.6%). If the contrast is not clean on QEMU, tune the rogue duty
+  cycle, the priorities, or the workload.
 - `SCHED_SPORADIC` (a possible kernel-budget analogue for the rogue) was
   not verified and is not used; it is a post-skeleton experiment.
 - No auto-restore: once demoted, the rogue stays demoted for the run.

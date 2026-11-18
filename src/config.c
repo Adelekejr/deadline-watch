@@ -104,6 +104,17 @@ int dw_config_load_file(dw_config_t *cfg, const char *path)
         char *s = dw_trim(line);
         if (*s == '\0' || *s == '#')
             continue;
+        /* Inline comment: '#' starts a comment anywhere on the line,
+           so strip it before splitting key and value. Without this,
+           a trailing comment becomes part of the value and the key
+           is rejected as unknown. */
+        char *hash = strchr(s, '#');
+        if (hash) {
+            *hash = '\0';
+            s = dw_trim(s);
+            if (*s == '\0')
+                continue;
+        }
         char *eq = strchr(s, '=');
         if (!eq) {
             fprintf(stderr, "deadline-watch: %s:%d: ignoring line (no '='): %s\n",
