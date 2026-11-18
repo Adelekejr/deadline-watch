@@ -6,6 +6,8 @@
  * command-line flags. A missing default config file is not an error.
  */
 #include <ctype.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,9 +62,14 @@ static int dw_set_int(dw_config_t *cfg, const char *key, const char *val)
         return 0;
     }
 
+    /* strtol() with a range check: without it an out-of-range value
+       (e.g. 99999999999999999999) wraps to LONG_MAX and the (int) cast
+       below truncates it to a nonsense value (-1) instead of an error. */
+    errno = 0;
     char *end = NULL;
     long v = strtol(val, &end, 10);
-    if (end == val || *end != '\0')
+    if (errno == ERANGE || end == val || *end != '\0' ||
+        v > INT_MAX || v < INT_MIN)
         return -1;
 
     if (strcmp(key, "control_period_ms") == 0)    cfg->control_period_ms = (int)v;
@@ -147,6 +154,20 @@ static void dw_usage(const char *prog)
         prog);
 }
 
+/* Parse a --flag=N integer with the same validation as the config file:
+   the whole string must be a number in int range. Returns 0 or -1. */
+static int dw_flag_int(const char *s, int *out)
+{
+    errno = 0;
+    char *end = NULL;
+    long v = strtol(s, &end, 10);
+    if (errno == ERANGE || end == s || *end != '\0' ||
+        v > INT_MAX || v < INT_MIN)
+        return -1;
+    *out = (int)v;
+    return 0;
+}
+
 int dw_config_parse_args(dw_config_t *cfg, int argc, char **argv)
 {
     const char *config_arg = NULL;
@@ -181,11 +202,11 @@ int dw_config_parse_args(dw_config_t *cfg, int argc, char **argv)
         } else if (strncmp(a, "--rogue=", 8) == 0) {
             if (dw_set_bool(a + 8, &cfg->rogue_on) != 0) { dw_usage(argv[0]); return -1; }
         } else if (strncmp(a, "--duration=", 11) == 0) {
-            cfg->duration_s = (int)strtol(a + 11, NULL, 10);
+            if (dw_flag_int(a + 11, &cfg->duration_s) != 0) { dw_usage(argv[0]); return -1; }
         } else if (strncmp(a, "--rogue-duty=", 13) == 0) {
-            cfg->rogue_duty_pct = (int)strtol(a + 13, NULL, 10);
+            if (dw_flag_int(a + 13, &cfg->rogue_duty_pct) != 0) { dw_usage(argv[0]); return -1; }
         } else if (strncmp(a, "--rogue-threads=", 16) == 0) {
-            cfg->rogue_threads = (int)strtol(a + 16, NULL, 10);
+            if (dw_flag_int(a + 16, &cfg->rogue_threads) != 0) { dw_usage(argv[0]); return -1; }
         } else if (strncmp(a, "--log=", 6) == 0) {
             snprintf(cfg->log_path, sizeof(cfg->log_path), "%s", a + 6);
         } else if (strncmp(a, "--config=", 9) == 0) {
@@ -202,6 +223,7 @@ int dw_config_parse_args(dw_config_t *cfg, int argc, char **argv)
     /* Sanity clamps (tuned on the target; see README.md). */
     if (cfg->control_period_ms < 1) cfg->control_period_ms = 1;
     if (cfg->sensor_period_ms < 1)  cfg->sensor_period_ms = 1;
+    if (cfg->rogue_work_window_ms < 1) cfg->rogue_work_window_ms = 1;
     if (cfg->rogue_duty_pct < 0)    cfg->rogue_duty_pct = 0;
     if (cfg->rogue_duty_pct > 100)  cfg->rogue_duty_pct = 100;
     if (cfg->duration_s < 1)        cfg->duration_s = 1;

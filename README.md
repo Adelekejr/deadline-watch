@@ -108,9 +108,9 @@ run with `config/deadline-watch.conf` or flags (`--rogue-duty=N`,
 `--rogue-threads=N`, `--log=PATH`); see `--help`.
 
 **Getting the binary into the guest.** The QSTI docs prescribe copying
-it in over SSH (`scp` to `qnxuser@<guest-ip>`). Whether sshd runs by
-default on the QEMU image is still to be confirmed on a booted guest;
-the fallback is a host HTTP server plus guest `curl`.
+it in over SSH (`scp` to `qnxuser@<guest-ip>`). Confirmed on a booted
+guest: sshd runs and `scp` works first try; the fallback is a host HTTP
+server plus guest `curl`.
 
 **Getting the log back:** the same route in reverse (`scp` from the
 guest), or read it from the guest console.
@@ -150,9 +150,9 @@ deadline-watch/
 
 - The skeleton has been compiled and run in the QEMU guest; the real
   numbers are in the demo table above and in `STAGE-2B-RUNS.md`. Host
-  `qcc` is currently blocked: a restart wiped the licence file, so
-  host-side compiles need the licence restored first. The guest has
-  its own compiler as a fallback.
+  `qcc` works: the licence file was once wiped by a restart, but it has
+  been restored (and now also lives in the persistent home directory).
+  The guest has its own compiler as a fallback.
 - The control loop's workload is a stand-in compute loop; its iteration
   count (`control_work_iters`) must be calibrated on the target so the
   work takes ~1 ms.

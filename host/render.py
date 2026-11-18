@@ -83,9 +83,11 @@ def print_summary(rows, stats, throttles):
 
 
 def plot_ascii(rows):
-    """Coarse jitter-over-time picture using only the standard library."""
+    """Coarse jitter-over-time picture using only the standard library.
+    MISS rows (watchdog starvation) are plotted too: they are most of
+    the misses in a guard-off run, and their lateness is the largest."""
     ctrl = [(r["t_ms"], r["lateness_us"]) for r in rows
-            if r["thread"] == "control" and r["event"] == "CYCLE"]
+            if r["thread"] == "control" and r["event"] in ("CYCLE", "MISS")]
     if not ctrl:
         print("(no control CYCLE rows to plot)")
         return
@@ -118,7 +120,7 @@ def plot_png(rows, out, throttles):
         print("matplotlib not installed; skipping PNG (ASCII plot above).")
         return False
     ctrl = [(r["t_ms"] / 1000.0, r["lateness_us"]) for r in rows
-            if r["thread"] == "control" and r["event"] == "CYCLE"]
+            if r["thread"] == "control" and r["event"] in ("CYCLE", "MISS")]
     if not ctrl:
         print("(no control CYCLE rows to plot)")
         return False

@@ -18,6 +18,7 @@
  *
  * The host-side script host/render.py parses exactly this format.
  */
+#include <errno.h>
 #include <string.h>
 
 #include "dw.h"
@@ -59,9 +60,16 @@ void dw_log_row(dw_ctx_t *ctx, const struct timespec *now,
     if (!ctx->log)
         return;
     double t_ms = (double)dw_diff_us(&ctx->start, now) / 1000.0;
-    fprintf(ctx->log, "%.3f,%s,%s,%ld,%ld,%ld,%s\n",
-            t_ms, thread, event, cycle, lateness_us, worst_us,
-            detail ? detail : "");
+    if (fprintf(ctx->log, "%.3f,%s,%s,%ld,%ld,%ld,%s\n",
+                t_ms, thread, event, cycle, lateness_us, worst_us,
+                detail ? detail : "") < 0 && !ctx->log_failed) {
+        /* A black-box log that silently drops rows is worse than no
+           log: say so once instead of losing rows quietly (e.g. a
+           full disk). Rows after this point are still attempted. */
+        ctx->log_failed = 1;
+        fprintf(stderr, "deadline-watch: failed to write to log '%s': %s\n",
+                ctx->cfg.log_path, strerror(errno));
+    }
     /* Flush on rare, important rows so a crash cannot lose them.
        CYCLE rows stay buffered (120/s); they flush on the next event
        row, the per-second ROGUE row, or at close. */

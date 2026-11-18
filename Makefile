@@ -9,9 +9,8 @@
 # The binary runs inside the QEMU guest (QNX 8.0), not on the host.
 # See README.md for how it gets into the guest.
 #
-# NOTE (Stage 1): this Makefile has NOT yet been run against an installed
-# SDP — the myQNX licence is pending. Verify `qcc -V` output and the
-# link step once ~/qnx800 exists.
+# NOTE: verified against the installed SDP 8.0 (qcc -Vgcc_ntox86_64);
+# the binary was compiled and run in the QEMU guest. See README.md.
 
 QCC         ?= qcc
 QCC_TARGET  ?= -Vgcc_ntox86_64

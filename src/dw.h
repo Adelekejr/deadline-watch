@@ -5,11 +5,8 @@
  * QNX-ONLY program: it uses the QNX message-passing API (channels,
  * pulses) and POSIX real-time scheduling. It does not build on the host.
  *
- * NOTE (Stage 1 skeleton): this code is written against the QNX 8.0
- * documentation (see docs/design-8.0.md). It has NOT yet been compiled
- * against an installed SDP — the myQNX licence is pending. Every
- * QNX-specific call used here is a documented 8.0 API; verify signatures
- * against $QNX_TARGET/usr/include once the SDP is installed.
+ * NOTE: verified against the installed SDP 8.0 (QNX 8.0, qcc
+ * -Vgcc_ntox86_64); the binary compiles and runs in the QEMU guest.
  * In particular, Adaptive Partitioning is NOT used: QNX OS 8.0 does not
  * support it (see docs/design-8.0.md). Enforcement is by strict-priority
  * scheduling — the supervisor demotes the rogue thread's priority.
@@ -81,6 +78,7 @@ typedef struct dw_ctx {
     int coid;                 /* connection for pulses (threads + timer) */
     timer_t watchdog;         /* 1 ms timer */
     FILE *log;
+    int log_failed;           /* a log write has failed (warned once) */
     struct timespec start;    /* monotonic start time (cycle 0 epoch) */
     dw_thread_state_t track[DW_NTRACKED]; /* [0]=control, [1]=sensor */
     pthread_t control_tid;

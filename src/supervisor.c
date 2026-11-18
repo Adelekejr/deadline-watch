@@ -119,6 +119,9 @@ static void dw_record_miss(dw_ctx_t *ctx, int ti, long cycle,
     long late = dw_diff_us(deadline, now);
     st->misses++;
     st->consecutive_misses++;
+    st->clean_cycles = 0;   /* a miss breaks the clean streak (same as a
+                               late pulse in dw_report_cycle); without this
+                               a starvation miss would not stop a RECOVER */
     if (late > st->worst_lateness_us)
         st->worst_lateness_us = late;
     dw_log_row(ctx, now, st->name, "MISS", cycle, late,
@@ -141,13 +144,12 @@ static void dw_report_cycle(dw_ctx_t *ctx, int ti, long cycle,
         st->expected_cycle++;
     }
     if (cycle < st->expected_cycle) {
-        /* Stale pulse for a cycle already counted as a miss: refine the
-           worst overrun, do not count it again. */
-        struct timespec d;
-        dw_deadline(ctx, ti, cycle, &d);
-        long late = dw_diff_us(&d, now);
-        if (late > st->worst_lateness_us)
-            st->worst_lateness_us = late;
+        /* Stale pulse for a cycle already counted as a miss: do not
+           count it again, and do not raise worst_lateness_us either.
+           The summary's worst must be derivable from the logged rows;
+           this pulse has no row, so its lateness must not leak into
+           the summary (it used to, which made SUMMARY worst_us larger
+           than the worst lateness in any log row). */
         return;
     }
 
