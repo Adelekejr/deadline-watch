@@ -1,39 +1,63 @@
-# DeadlineWatch — QNX 8.0 / QEMU build.
-#
-# Plain qcc wrapper (NOT the Momentics recursive-make system).
-# Requires the SDP environment on the host:
+# DeadlineWatch — QNX 8.0 build (plain qcc wrapper, not the Momentics
+# recursive-make system). On the host, with the SDP environment:
 #     source ~/qnx800/qnxsdp-env.sh
-# then:
-#     make            # builds ./deadline-watch for x86_64
+#     make                # ./deadline-watch, ./dw-pump, ./dw-rogue for x86_64
+# Or self-hosted inside the QNX 8.0 guest (it ships cc):
+#     make QCC=cc QCC_TARGET=
 #
-# The binary runs inside the QEMU guest (QNX 8.0), not on the host.
-# See README.md for how it gets into the guest.
+# The binaries run inside the QNX 8.0 guest (QEMU), not on the host.
 #
-# NOTE: verified against the installed SDP 8.0 (qcc -Vgcc_ntox86_64);
-# the binary was compiled and run in the QEMU guest. See README.md.
+#     make host-check     # no QNX needed: compiles every C file with gcc
+#                         # against stub QNX headers (-Werror), runs the
+#                         # policy unit tests and the render.py self-test
 
 QCC         ?= qcc
 QCC_TARGET  ?= -Vgcc_ntox86_64
 CFLAGS      ?= -Wall -Wextra -O2
 
-SRC = src/supervisor.c src/threads.c src/config.c src/log.c
-OBJ = $(SRC:.c=.o)
-BIN = deadline-watch
+HDRS = src/dw.h src/dw_core.h src/dw_proto.h src/dw_client.h
 
-all: $(BIN)
+SUP_SRC  = src/supervisor.c src/threads.c src/config.c src/log.c src/dw_core.c
+PUMP_SRC = examples/pump.c src/dw_client.c src/dw_core.c
+ROG_SRC  = examples/rogue.c src/dw_client.c src/dw_core.c
 
-$(BIN): $(OBJ)
-	$(QCC) $(QCC_TARGET) -o $@ $(OBJ)
+BINS = deadline-watch dw-pump dw-rogue
 
-%.o: %.c src/dw.h
-	$(QCC) $(QCC_TARGET) $(CFLAGS) -c $< -o $@
+all: $(BINS)
+
+deadline-watch: $(SUP_SRC) $(HDRS)
+	$(QCC) $(QCC_TARGET) $(CFLAGS) -o $@ $(SUP_SRC)
+
+dw-pump: $(PUMP_SRC) $(HDRS)
+	$(QCC) $(QCC_TARGET) $(CFLAGS) -o $@ $(PUMP_SRC)
+
+dw-rogue: $(ROG_SRC) $(HDRS)
+	$(QCC) $(QCC_TARGET) $(CFLAGS) -o $@ $(ROG_SRC)
 
 clean:
-	rm -f $(OBJ) $(BIN)
+	rm -f $(BINS) src/*.o examples/*.o tests/test_core
 
-# Host-side check: run the graph script against a synthetic log.
-# Needs only python3 (matplotlib optional — without it, ASCII output).
+# ---- host checks (no QNX SDP required) -------------------------------
+HOST_CC     ?= cc
+HOST_CFLAGS  = -std=c11 -Wall -Wextra -Werror -O2 -Isrc -Itests/qnx-stubs
+
+host-check: host-compile host-test render-test
+
+host-compile:
+	@for f in $(sort $(SUP_SRC) $(PUMP_SRC) $(ROG_SRC)); do \
+	    echo "  CC (stub QNX headers) $$f"; \
+	    $(HOST_CC) $(HOST_CFLAGS) -c $$f -o /tmp/dw-host-check.o || exit 1; \
+	done
+	@rm -f /tmp/dw-host-check.o
+
+host-test: tests/test_core
+	./tests/test_core
+
+tests/test_core: tests/test_core.c src/dw_core.c src/dw_core.h
+	$(HOST_CC) -std=c11 -D_POSIX_C_SOURCE=200809L -Wall -Wextra -Werror -O2 \
+	    -Isrc -o $@ tests/test_core.c src/dw_core.c
+
 render-test:
-	python3 host/render.py --synthetic --out /tmp/dw-jitter-test.png
+	python3 host/render.py --self-test
 
-.PHONY: all clean render-test
+.PHONY: all clean host-check host-compile host-test render-test

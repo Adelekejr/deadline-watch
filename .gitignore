@@ -19,3 +19,12 @@ __pycache__/
 *~
 *.swp
 .vscode/
+
+# Extra binaries
+dw-pump
+dw-rogue
+tests/test_core
+
+# Real run logs ARE committed under docs/results/ (proof of QNX runs)
+!docs/results/*.csv
+!docs/results/*.log
