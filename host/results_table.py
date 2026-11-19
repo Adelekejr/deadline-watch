@@ -14,6 +14,10 @@ Definitions
 - attack window (pump runs): supervisor time 4.0 s .. 24.0 s, when
   scripts/demo.sh runs dw-rogue (it starts ~1 s + 3 s after the
   supervisor and runs DUR-10 = 20 s; approximate to process start-up)
+- supervisor stall: longest gap between consecutive log rows while tasks
+  are active. The supervisor runs at prio 30 and logs every 10 ms cycle,
+  so a gap of seconds means the whole guest stopped (a QEMU/TCG stall),
+  not a scheduling problem the guard could fix.
 - reaction: time from the first critical-task miss inside the attack
   window to the supervisor's first THROTTLE or SAFE_STATE row
 """
@@ -77,14 +81,32 @@ def pump_dose(out_path):
     return worst, last, alarm
 
 
+def stall_ms(rows):
+    end = None
+    for r in rows:
+        if r["event"] in ("UNREGISTER", "LOST", "END"):
+            end = r["t_ms"]
+            break
+    gap, prev = 0.0, None
+    for r in rows:
+        if prev is None and r["event"] != "CYCLE":
+            continue                    # start at the first judged cycle
+        if end is not None and r["t_ms"] > end:
+            break
+        if prev is not None:
+            gap = max(gap, r["t_ms"] - prev)
+        prev = r["t_ms"]
+    return gap
+
+
 def pct(m, j):
     return f"{100.0 * m / j:.1f} %" if j else "n/a"
 
 
 def main(d):
     print("### Local mode (one process; 30 s; control 10 ms @20, rogue @25)\n")
-    print("| Run | Control misses | Longest streak | Sensor misses | Enforcement |")
-    print("|---|---|---|---|---|")
+    print("| Run | Control misses | Longest streak | Sensor misses | Enforcement | Supervisor stall |")
+    print("|---|---|---|---|---|---|")
     for path in sorted(glob.glob(os.path.join(d, "local-*.csv"))):
         rows = parse_log(path)
         name = os.path.basename(path)[6:-4]
@@ -93,12 +115,13 @@ def main(d):
         acts = [f"{r['event']} @{r['t_ms'] / 1000:.2f}s" for r in rows
                 if r["event"] in ("THROTTLE", "ESCALATE", "SAFE_STATE")]
         print(f"| {name} | {m}/{j} ({pct(m, j)}) | {s} ({s * 10} ms) | "
-              f"{sm}/{sj} ({pct(sm, sj)}) | {', '.join(acts) or 'none'} |")
+              f"{sm}/{sj} ({pct(sm, sj)}) | {', '.join(acts) or 'none'} | "
+              f"{stall_ms(rows):.0f} ms |")
 
     print("\n### Pump scenarios (three processes; supervisor, dw-pump, dw-rogue)\n")
     print("| Run | pump-dose misses, whole run | ...during attack window | "
-          "Longest streak | Action (reaction) | Worst / final dose error | Pump alarm |")
-    print("|---|---|---|---|---|---|---|")
+          "Longest streak | Action (reaction) | Worst / final dose error | Pump alarm | Supervisor stall |")
+    print("|---|---|---|---|---|---|---|---|")
     for path in sorted(glob.glob(os.path.join(d, "pump-*.csv"))):
         rows = parse_log(path)
         name = os.path.basename(path)[5:-4]
@@ -117,12 +140,15 @@ def main(d):
             if fm and fm["t_ms"] <= act["t_ms"]:
                 react = f" ({act['t_ms'] - fm['t_ms']:.0f} ms after first miss)"
             act_s = f"{act['event']} @{act['t_ms'] / 1000:.2f}s{react}"
+            if act["t_ms"] < ATTACK[0]:
+                act_s += " (before the rogue started)"
         else:
             act_s = "none"
         worst, last, alarm = pump_dose(path[:-4] + "-pump.out")
         dose = (f"{worst:+.1f} % / {last:+.1f} %" if worst is not None else "n/a")
         print(f"| {name} | {m}/{j} ({pct(m, j)}) | {am}/{aj} ({pct(am, aj)}) | "
-              f"{s} ({s * 10} ms) | {act_s} | {dose} | {'yes' if alarm else 'no'} |")
+              f"{s} ({s * 10} ms) | {act_s} | {dose} | {'yes' if alarm else 'no'} | "
+              f"{stall_ms(rows):.0f} ms |")
 
 
 if __name__ == "__main__":

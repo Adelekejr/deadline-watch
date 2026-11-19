@@ -47,6 +47,8 @@ static int g_prio = 20, g_press_prio = 15, g_duration = 30;
 static int g_work = 200000;
 
 static volatile double g_delivered_ml, g_target_ml, g_pressure_kpa;
+static struct timespec g_epoch;          /* dose loop start (prescription clock) */
+static volatile int g_epoch_set;
 static volatile int g_alarm;          /* 0 none, 1 supervisor safe state, 2 supervisor lost */
 static volatile int g_stop;
 
@@ -84,6 +86,8 @@ static void *dose_thread(void *arg)
     double nominal = rate_ml_ms * DOSE_PERIOD_MS / STEP_ML;
     long max_steps = (long)(nominal * 1.2) + 1;
 
+    clock_gettime(CLOCK_MONOTONIC, &g_epoch);
+    g_epoch_set = 1;
     for (long k = 0; !g_stop; ) {
         burn(g_work);
         double t_ms = (double)(k + 1) * DOSE_PERIOD_MS;
@@ -197,7 +201,14 @@ int main(int argc, char **argv)
                     (double)(tn.tv_nsec - t0.tv_nsec) / 1e9;
         if (g_stop || (g_duration > 0 && el >= g_duration + 0.5))
             break;
-        double tgt = g_target_ml, got = g_delivered_ml;
+        /* Prescribed volume from the wall clock, not from the dose loop:
+           if the dose loop is starved it cannot update anything, and a
+           prescription that froze with it would hide the under-dose. */
+        double tgt = 0.0, got = g_delivered_ml;
+        if (g_epoch_set)
+            tgt = g_rate_ml_h / 3600.0 *
+                  ((double)(tn.tv_sec - g_epoch.tv_sec) +
+                   (double)(tn.tv_nsec - g_epoch.tv_nsec) / 1e9);
         double err = tgt > 0 ? 100.0 * (got - tgt) / tgt : 0.0;
         printf("[pump %5.1fs] prescribed %7.4f mL  delivered %7.4f mL  "
                "dose error %+6.2f%%  line %4.1f kPa  %s\n",

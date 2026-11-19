@@ -72,7 +72,12 @@ def main():
                 ("C: guard on (rogue unknown) -> SAFE_STATE", f"pump-C-safe-state-{a.rep}"),
                 ("C': guard on, --demote-pid", f"pump-Cpid-demote-pid-{a.rep}")]
         fig, axes = plt.subplots(2, 1, figsize=(10, 6.4), sharex=True)
-    colors = ["tab:red", "tab:green", "tab:orange", "tab:blue"]
+    colors = (["tab:gray", "tab:red", "tab:green"] if a.local else
+              ["tab:red", "tab:green", "tab:orange", "tab:blue"])
+    if not a.local:
+        for ax in axes:   # demo.sh runs dw-rogue from ~4 s to ~24 s
+            ax.axvspan(4.0, 24.0, color="0.92", zorder=0)
+        axes[0].text(14.0, 10.4, "rogue running (~4-24 s)", ha="center", fontsize=8, color="0.4")
     for (label, base), col in zip(runs, colors):
         rows = parse_log(os.path.join(a.dir, base + ".csv"))
         task = critical_task(rows)
