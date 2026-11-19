@@ -196,6 +196,8 @@ examples/pump.c      simulated infusion pump (critical client)
 examples/rogue.c     separate runaway process (offender)
 scripts/demo.sh      runs all scenarios in the guest, saves logs
 host/render.py       summary, jitter plot, live --follow view, --self-test
+host/results_table.py  RESULTS.md tables from the logs
+host/plot_scenarios.py graphs in docs/results/ from the logs
 tests/               policy unit tests + stub QNX headers for host compile
 docs/                design-8.0.md, RESULTS.md, results/
 ```
