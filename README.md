@@ -176,7 +176,7 @@ make host-check
 ```
 
 Compiles every C file with `gcc -Wall -Wextra -Werror` against stub QNX
-headers (`tests/qnx-stubs/`, declarations only), runs 43 unit checks of
+headers (`tests/qnx-stubs/`, declarations only), runs 46 unit checks of
 the deadline policy (`tests/test_core.c`: miss accounting, the
 THROTTLE → ESCALATE → SAFE_STATE ladder timing, recovery, lost
 clients), and runs the `render.py` self-test. This proves the code is

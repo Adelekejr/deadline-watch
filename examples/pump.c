@@ -28,6 +28,7 @@
 #define _POSIX_C_SOURCE 200809L
 #define _QNX_SOURCE          /* QNX extensions: SIGEV_PULSE_INIT, _SC_NPROCESSORS_ONLN */
 #include <errno.h>
+#include <limits.h>
 #include <pthread.h>
 #include <sched.h>
 #include <stdio.h>
@@ -156,7 +157,12 @@ static int arg_int(const char *a, const char *key, int *out)
     size_t n = strlen(key);
     if (strncmp(a, key, n) != 0)
         return 0;
-    *out = atoi(a + n);
+    char *end = NULL;
+    errno = 0;
+    long v = strtol(a + n, &end, 10);
+    if (errno == ERANGE || end == a + n || *end != '\0' || v < INT_MIN || v > INT_MAX)
+        return 0;   /* not a valid number: falls through to the usage text */
+    *out = (int)v;
     return 1;
 }
 
@@ -175,7 +181,7 @@ int main(int argc, char **argv)
             return 2;
         }
     }
-    if (g_rate_ml_h <= 0) g_rate_ml_h = 120.0;
+    if (!(g_rate_ml_h > 0.0 && g_rate_ml_h <= 10000.0)) g_rate_ml_h = 120.0;  /* also NaN */
     printf("dw-pump (SIMULATION, not a medical device): pid %d, rate %.1f mL/h, "
            "dose loop %d ms @prio %d\n", (int)getpid(), g_rate_ml_h,
            DOSE_PERIOD_MS, g_prio);

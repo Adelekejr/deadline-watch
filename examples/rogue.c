@@ -18,6 +18,7 @@
 #define _POSIX_C_SOURCE 200809L
 #define _QNX_SOURCE          /* QNX extensions: SIGEV_PULSE_INIT, _SC_NPROCESSORS_ONLN */
 #include <errno.h>
+#include <limits.h>
 #include <pthread.h>
 #include <sched.h>
 #include <stdio.h>
@@ -83,15 +84,30 @@ static void *rogue_thread(void *arg)
     return NULL;
 }
 
+/* "--key=N" with a whole-string integer check; 1 = parsed. */
+static int arg_int(const char *a, const char *key, int *out)
+{
+    size_t n = strlen(key);
+    if (strncmp(a, key, n) != 0)
+        return 0;
+    char *end = NULL;
+    errno = 0;
+    long v = strtol(a + n, &end, 10);
+    if (errno == ERANGE || end == a + n || *end != '\0' || v < INT_MIN || v > INT_MAX)
+        return 0;   /* not a valid number: falls through to the usage text */
+    *out = (int)v;
+    return 1;
+}
+
 int main(int argc, char **argv)
 {
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i];
-        if (strncmp(a, "--threads=", 10) == 0) g_threads = atoi(a + 10);
-        else if (strncmp(a, "--prio=", 7) == 0) g_prio = atoi(a + 7);
-        else if (strncmp(a, "--duty=", 7) == 0) g_duty = atoi(a + 7);
-        else if (strncmp(a, "--duration=", 11) == 0) g_duration = atoi(a + 11);
-        else if (strncmp(a, "--start-delay=", 14) == 0) g_delay = atoi(a + 14);
+        if (arg_int(a, "--threads=", &g_threads)) ;
+        else if (arg_int(a, "--prio=", &g_prio)) ;
+        else if (arg_int(a, "--duty=", &g_duty)) ;
+        else if (arg_int(a, "--duration=", &g_duration)) ;
+        else if (arg_int(a, "--start-delay=", &g_delay)) ;
         else if (strcmp(a, "--register=on") == 0) g_register = 1;
         else if (strcmp(a, "--register=off") == 0) g_register = 0;
         else {

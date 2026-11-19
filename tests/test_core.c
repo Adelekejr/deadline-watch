@@ -259,6 +259,21 @@ static void test_miss_rate(void)
     CHECK(dw_core_lost(&c, ti, &now) == 0, "safe state disabled entirely -> lost is only logged");
 }
 
+static void test_future_report(void)
+{
+    dw_core_t c; struct timespec e = { 100, 0 };
+    reset_counts();
+    dw_core_init(&c, 1, 300, log_cb, NULL);
+    c.targets = 1;
+    int ti = dw_core_add_task(&c, "ctl", DW_ROLE_CRITICAL, 10, &e);
+    struct timespec now = at_ms(&e, 55);
+    CHECK(dw_core_report(&c, ti, 1000000000L, &now) == 0 && n_rows == 0,
+          "report for a far-future cycle is ignored (no flood of skipped rows)");
+    CHECK(dw_core_report(&c, ti, 0x7fffffffffffffffL, &now) == 0 && n_rows == 0,
+          "huge cycle value is ignored without overflow");
+    CHECK(c.task[ti].expected_cycle == 0, "bogus reports do not advance the cycle count");
+}
+
 int main(void)
 {
     test_time_helpers();
@@ -270,6 +285,7 @@ int main(void)
     test_recover();
     test_lost();
     test_miss_rate();
+    test_future_report();
     printf("dw_core: %d/%d checks passed\n", checks - fails, checks);
     return fails ? 1 : 0;
 }

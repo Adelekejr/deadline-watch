@@ -196,6 +196,15 @@ int dw_core_report(dw_core_t *c, int ti, long cycle, const struct timespec *now)
     dw_task_t *t = &c->task[ti];
     int acts = DW_ACT_NONE;
 
+    /* A report for a cycle that has not started yet (more than one period
+       ahead of the clock) is bogus: a buggy client could otherwise make
+       the loop below log millions of "skipped" misses at the supervisor's
+       top priority. Integer-only bound, so a huge value cannot overflow
+       the deadline arithmetic. */
+    int64_t elapsed_ms = dw_diff_us(&t->epoch, now) / 1000;
+    if (elapsed_ms < 0 || cycle > elapsed_ms / t->period_ms + 1)
+        return DW_ACT_NONE;
+
     /* Cycles skipped before this one. The watchdog usually catches them
        first; this is the net. */
     while (t->expected_cycle < cycle) {
