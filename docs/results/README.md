@@ -19,6 +19,8 @@ Other files:
   graphs made by `python3 host/plot_scenarios.py docs/results --all`;
   `pump-B-guard-on-r1-lateness.png` by `host/render.py`.
 - `captures/`: console screenshots rendered from the `.out` files.
+- `post-hardening/`: one run of each pump scenario with the final binaries
+  (after the last code-review commit).
 - `pre-fix/`: the C′ run that exposed the `--demote-pid` new-thread bug,
   kept as evidence.
 - `guest-uname.txt`, `guest-pidin-info.txt`, `vm-setup.txt`: the guest and VM.

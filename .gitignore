@@ -5,7 +5,7 @@
 deadline-watch
 *.ifs
 
-# Generated run data (logs and graphs are produced by real runs, not committed)
+# Generated run data (not committed, except the evidence under docs/results/)
 *.log
 *.csv
 host/*.png
@@ -27,4 +27,6 @@ tests/test_core
 
 # Real run logs ARE committed under docs/results/ (proof of QNX runs)
 !docs/results/*.csv
+!docs/results/**/*.csv
 !docs/results/*.log
+!docs/results/**/*.log

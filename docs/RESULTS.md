@@ -156,6 +156,23 @@ Graph: [`results/local-timeline-r1.png`](results/local-timeline-r1.png).
     run and a SAFE_STATE at 60.2 s, both caused by the frozen guest.
   These runs are kept, not hidden, but they say nothing about the guard.
 
+## Check run after the final hardening commit
+
+The final code review added input checks only (a BEAT for a cycle that has
+not started is ignored, `--demote-pid` never targets the supervisor or a
+registered task, priority sanity checks, strict number parsing in the
+examples). The normal paths are unchanged. One more run of each pump scenario was
+recorded with the final binaries, in
+[`results/post-hardening/`](results/post-hardening/) (not part of the 3-run
+averages above):
+
+| Run | pump-dose misses, whole run | ...during attack window | Longest streak | Action (reaction) | Worst / final dose error | Pump alarm | Supervisor stall |
+|---|---|---|---|---|---|---|---|
+| A-guard-off-r1 | 2001/3104 (64.5 %) | 1994/1999 (99.7 %) | 2001 (20010 ms) | none | -86.8 % / -59.6 % | no | 15 ms |
+| B-guard-on-r1 | 3/3104 (0.1 %) | 3/2000 (0.1 %) | 3 (30 ms) | THROTTLE @4.08s (10 ms after first miss) | -0.1 % / +0.0 % | no | 21 ms |
+| C-safe-state-r1 | 44/3104 (1.4 %) | 44/2000 (2.2 %) | 31 (310 ms) | SAFE_STATE @4.36s (290 ms after first miss) | -89.9 % / -89.9 % | yes | 131 ms |
+| Cpid-demote-pid-r1 | 6/3105 (0.2 %) | 6/2000 (0.3 %) | 3 (30 ms) | THROTTLE @4.04s (10 ms after first miss) | -0.8 % / +0.0 % | no | 29 ms |
+
 ## Problems seen during recording
 
 - **One guest hang.** At about 15:48 WAT the whole guest stopped
