@@ -190,7 +190,7 @@ examples/rogue.c     separate runaway process (offender)
 scripts/demo.sh      runs all scenarios in the guest, saves logs
 host/render.py       summary, jitter plot, live --follow view, --self-test
 tests/               policy unit tests + stub QNX headers for host compile
-docs/                design-8.0.md, RESULTS.md, DEVPOST.md, results/
+docs/                design-8.0.md, RESULTS.md, results/
 ```
 
 ## Honest limits
