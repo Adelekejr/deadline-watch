@@ -179,8 +179,8 @@ static int dw_core_miss(dw_core_t *c, int ti, long cycle,
     long late = (long)dw_diff_us(deadline, now);
     t->misses++;
     t->consecutive_misses++;
-    if (t->consecutive_misses > t->max_consecutive)
-        t->max_consecutive = t->consecutive_misses;
+    if (++t->streak > t->max_consecutive)
+        t->max_consecutive = t->streak;
     t->clean_cycles = 0;
     if (late > t->worst_lateness_us)
         t->worst_lateness_us = late;
@@ -223,14 +223,15 @@ int dw_core_report(dw_core_t *c, int ti, long cycle, const struct timespec *now)
     if (late > 0) {
         t->misses++;
         t->consecutive_misses++;
-        if (t->consecutive_misses > t->max_consecutive)
-            t->max_consecutive = t->consecutive_misses;
+        if (++t->streak > t->max_consecutive)
+            t->max_consecutive = t->streak;
         t->clean_cycles = 0;
         acts |= dw_core_check(c, ti, now);
         acts |= dw_core_window(c, ti, 1, now);
     } else {
         acts |= dw_core_window(c, ti, 0, now);
         t->consecutive_misses = 0;
+        t->streak = 0;
         t->clean_cycles++;
         if (c->throttled && !c->recovered && !c->safe_state &&
             ti == c->trigger_task && t->clean_cycles >= c->recover_cycles) {

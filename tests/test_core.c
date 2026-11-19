@@ -125,7 +125,8 @@ static void test_ladder(void)
     CHECK(seen_escalate == 63, "ESCALATE after 4 more misses (63 ms)");
     CHECK(seen_safe == 323, "SAFE_STATE after 300 ms of failure post-escalation");
     CHECK(c.throttle_events == 1, "one throttle event");
-    CHECK(c.task[ti].max_consecutive >= 30, "longest miss streak recorded");
+    CHECK(c.task[ti].max_consecutive == c.task[ti].misses && c.task[ti].misses > 30,
+          "streak spans the THROTTLE reset (every miss is in one run)");
     CHECK(c.safe_state == 1, "safe state latched");
     /* Latched: nothing more happens. */
     struct timespec now = at_ms(&e, 700);

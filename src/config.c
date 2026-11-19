@@ -24,7 +24,7 @@ void dw_config_defaults(dw_config_t *cfg)
     cfg->sensor_prio          = 15;
     cfg->rogue_prio           = 25;
     cfg->rogue_demoted_prio   = 5;
-    cfg->rogue_duty_pct       = 85;
+    cfg->rogue_duty_pct       = 100;
     cfg->rogue_work_window_ms = 10;
     cfg->rogue_threads        = 0;   /* 0 = one per online CPU */
     cfg->guard_on             = 1;
@@ -189,7 +189,7 @@ static void dw_usage(const char *prog)
         "  --demote-pid=PID     system mode: also demote every thread of PID when\n"
         "                       enforcing (repeatable, up to 8; for unregistered processes)\n"
         "  --live=on|off        print a live status line every second (default on)\n"
-        "  --rogue-duty=N       rogue burn %% of each 10 ms window (default 85)\n"
+        "  --rogue-duty=N       rogue burn %% of each 10 ms window (default 100)\n"
         "  --rogue-threads=N    rogue thread count, 0 = one per CPU (default 0)\n"
         "  --log=PATH           black-box log file (default deadline-watch.csv)\n"
         "  --help               this text\n",

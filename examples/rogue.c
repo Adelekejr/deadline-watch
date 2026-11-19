@@ -11,7 +11,7 @@
  * the process does not cooperate at all; the supervisor can still demote
  * it with `deadline-watch --demote-pid=<pid printed below>`.
  *
- * Usage (as root): ./dw-rogue [--threads=N] [--prio=25] [--duty=85]
+ * Usage (as root): ./dw-rogue [--threads=N] [--prio=25] [--duty=100]
  *                             [--register=on|off] [--duration=S]
  *                             [--start-delay=S]  (print pid, wait, then burn)
  */
@@ -29,9 +29,15 @@
 #include "../src/dw_client.h"
 #include "../src/dw_core.h"
 
-static int g_threads = 0, g_prio = 25, g_duty = 85, g_register = 1;
+static int g_threads = 0, g_prio = 25, g_duty = 100, g_register = 1;
 static int g_duration = 0, g_delay = 0;
 static volatile int g_stop;
+static struct timespec g_end;   /* burners stop themselves here (if g_duration) */
+
+static int past_end(const struct timespec *now)
+{
+    return g_duration > 0 && dw_diff_us(&g_end, now) >= 0;
+}
 
 static void *rogue_thread(void *arg)
 {
@@ -57,6 +63,11 @@ static void *rogue_thread(void *arg)
             for (int i = 0; i < 1000; i++) x += i;
             clock_gettime(CLOCK_MONOTONIC, &now);
         } while (dw_diff_us(&w, &now) < burn_us && !g_stop);
+        /* Each burner checks the end time itself: when the supervisor
+           demotes the whole process (--demote-pid), the main thread is
+           demoted too and cannot get the CPU to stop a 100%-duty burner. */
+        if (past_end(&now))
+            break;
         long rest = window_us - burn_us;
         if (rest > 0) {
             struct timespec r = { rest / 1000000L, (rest % 1000000L) * 1000L };
@@ -116,6 +127,9 @@ int main(int argc, char **argv)
 
     if (g_delay > 0)
         sleep((unsigned)g_delay);   /* lets a script pass our pid to --demote-pid */
+
+    clock_gettime(CLOCK_MONOTONIC, &g_end);
+    g_end.tv_sec += g_duration;
 
     pthread_t t[32];
     int started = 0;

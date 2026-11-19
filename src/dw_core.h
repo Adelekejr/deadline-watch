@@ -44,6 +44,8 @@ typedef struct {
     long worst_lateness_us;
     long total_lateness_us;   /* sum of signed lateness of reported cycles */
     long consecutive_misses;
+    long streak;              /* current run of misses; unlike consecutive_misses
+                                 it is NOT reset when THROTTLE fires */
     long max_consecutive;     /* longest run of consecutive misses (outage) */
     int gone;                 /* 0 active/never, 1 unregistered, 2 lost */
     long expected_cycle;      /* next cycle index not yet accounted for */
