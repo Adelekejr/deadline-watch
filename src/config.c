@@ -5,14 +5,14 @@
  * (config/deadline-watch.conf by default, or --config=PATH), then
  * command-line flags. A missing default config file is not an error.
  */
+#include "dw.h"
+
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "dw.h"
 
 void dw_config_defaults(dw_config_t *cfg)
 {
@@ -30,6 +30,11 @@ void dw_config_defaults(dw_config_t *cfg)
     cfg->guard_on             = 1;
     cfg->rogue_on             = 1;
     cfg->duration_s           = 30;
+    cfg->mode                 = DW_MODE_LOCAL;
+    cfg->safe_after_ms        = 300;
+    cfg->safe_miss_pct        = 50;
+    cfg->rescue_boost         = 1;
+    cfg->live                 = 1;
     cfg->control_work_iters   = 200000;
     cfg->sensor_work_iters    = 50000;
     snprintf(cfg->log_path, sizeof(cfg->log_path), "deadline-watch.csv");
@@ -52,9 +57,32 @@ static int dw_set_bool(const char *s, int *out)
     return -1;
 }
 
+static int dw_set_mode(const char *s, int *out)
+{
+    if (strcmp(s, "local") == 0)  { *out = DW_MODE_LOCAL;  return 0; }
+    if (strcmp(s, "system") == 0) { *out = DW_MODE_SYSTEM; return 0; }
+    return -1;
+}
+
+static int dw_add_demote_pid(dw_config_t *cfg, const char *s)
+{
+    char *end = NULL;
+    errno = 0;
+    long v = strtol(s, &end, 10);
+    if (errno == ERANGE || end == s || *end != '\0' || v < 2 || v > INT_MAX)
+        return -1;   /* pid 1 (procnto) is never a valid target */
+    if (cfg->n_demote_pids >= DW_MAX_DEMOTE_PIDS)
+        return -1;
+    cfg->demote_pids[cfg->n_demote_pids++] = (int)v;
+    return 0;
+}
+
 static int dw_set_int(dw_config_t *cfg, const char *key, const char *val)
 {
     /* Non-numeric keys first: strtol() below would reject their values. */
+    if (strcmp(key, "mode") == 0) return dw_set_mode(val, &cfg->mode);
+    if (strcmp(key, "live") == 0) return dw_set_bool(val, &cfg->live);
+    if (strcmp(key, "rescue_boost") == 0) return dw_set_bool(val, &cfg->rescue_boost);
     if (strcmp(key, "guard_on") == 0) return dw_set_bool(val, &cfg->guard_on);
     if (strcmp(key, "rogue_on") == 0) return dw_set_bool(val, &cfg->rogue_on);
     if (strcmp(key, "log_path") == 0) {
@@ -83,6 +111,8 @@ static int dw_set_int(dw_config_t *cfg, const char *key, const char *val)
     else if (strcmp(key, "rogue_work_window_ms") == 0) cfg->rogue_work_window_ms = (int)v;
     else if (strcmp(key, "rogue_threads") == 0)    cfg->rogue_threads = (int)v;
     else if (strcmp(key, "duration_s") == 0)       cfg->duration_s = (int)v;
+    else if (strcmp(key, "safe_after_ms") == 0)    cfg->safe_after_ms = (int)v;
+    else if (strcmp(key, "safe_miss_pct") == 0)    cfg->safe_miss_pct = (int)v;
     else if (strcmp(key, "control_work_iters") == 0) cfg->control_work_iters = (int)v;
     else if (strcmp(key, "sensor_work_iters") == 0)  cfg->sensor_work_iters = (int)v;
     else
@@ -144,9 +174,21 @@ static void dw_usage(const char *prog)
     fprintf(stderr,
         "usage: %s [options]\n"
         "  --config=PATH        config file (default: config/deadline-watch.conf)\n"
-        "  --guard=on|off       enforce (demote rogue on 2 misses) or measure only\n"
-        "  --rogue=on|off       start the rogue threads or run control-only\n"
-        "  --duration=N         run length in seconds (default 30)\n"
+        "  --mode=local|system  local: built-in control/sensor/rogue threads (default)\n"
+        "                       system: guard OTHER processes that register via\n"
+        "                       dw_client (see examples/pump.c, examples/rogue.c)\n"
+        "  --guard=on|off       enforce (demote offenders on 2 misses) or measure only\n"
+        "  --rogue=on|off       local mode: start the rogue threads or run control-only\n"
+        "  --duration=N         run length in seconds (default 30, 0 = until Ctrl-C)\n"
+        "  --safe-after=MS      command the safe state after a critical task fails\n"
+        "                       this long with enforcement exhausted (default 300, 0 = off)\n"
+        "  --safe-miss-pct=N    ...or after it misses N%% of a 1 s window with\n"
+        "                       enforcement exhausted (default 50, 0 = off)\n"
+        "  --rescue-boost=on|off on safe state, raise critical threads just below\n"
+        "                       the supervisor so they can act (default on)\n"
+        "  --demote-pid=PID     system mode: also demote every thread of PID when\n"
+        "                       enforcing (repeatable, up to 8; for unregistered processes)\n"
+        "  --live=on|off        print a live status line every second (default on)\n"
         "  --rogue-duty=N       rogue burn %% of each 10 ms window (default 85)\n"
         "  --rogue-threads=N    rogue thread count, 0 = one per CPU (default 0)\n"
         "  --log=PATH           black-box log file (default deadline-watch.csv)\n"
@@ -207,6 +249,18 @@ int dw_config_parse_args(dw_config_t *cfg, int argc, char **argv)
             if (dw_flag_int(a + 13, &cfg->rogue_duty_pct) != 0) { dw_usage(argv[0]); return -1; }
         } else if (strncmp(a, "--rogue-threads=", 16) == 0) {
             if (dw_flag_int(a + 16, &cfg->rogue_threads) != 0) { dw_usage(argv[0]); return -1; }
+        } else if (strncmp(a, "--mode=", 7) == 0) {
+            if (dw_set_mode(a + 7, &cfg->mode) != 0) { dw_usage(argv[0]); return -1; }
+        } else if (strncmp(a, "--safe-after=", 13) == 0) {
+            if (dw_flag_int(a + 13, &cfg->safe_after_ms) != 0) { dw_usage(argv[0]); return -1; }
+        } else if (strncmp(a, "--safe-miss-pct=", 16) == 0) {
+            if (dw_flag_int(a + 16, &cfg->safe_miss_pct) != 0) { dw_usage(argv[0]); return -1; }
+        } else if (strncmp(a, "--rescue-boost=", 15) == 0) {
+            if (dw_set_bool(a + 15, &cfg->rescue_boost) != 0) { dw_usage(argv[0]); return -1; }
+        } else if (strncmp(a, "--demote-pid=", 13) == 0) {
+            if (dw_add_demote_pid(cfg, a + 13) != 0) { dw_usage(argv[0]); return -1; }
+        } else if (strncmp(a, "--live=", 7) == 0) {
+            if (dw_set_bool(a + 7, &cfg->live) != 0) { dw_usage(argv[0]); return -1; }
         } else if (strncmp(a, "--log=", 6) == 0) {
             snprintf(cfg->log_path, sizeof(cfg->log_path), "%s", a + 6);
         } else if (strncmp(a, "--config=", 9) == 0) {
@@ -226,7 +280,10 @@ int dw_config_parse_args(dw_config_t *cfg, int argc, char **argv)
     if (cfg->rogue_work_window_ms < 1) cfg->rogue_work_window_ms = 1;
     if (cfg->rogue_duty_pct < 0)    cfg->rogue_duty_pct = 0;
     if (cfg->rogue_duty_pct > 100)  cfg->rogue_duty_pct = 100;
-    if (cfg->duration_s < 1)        cfg->duration_s = 1;
+    if (cfg->duration_s < 0)        cfg->duration_s = 0;   /* 0 = until signalled */
+    if (cfg->safe_after_ms < 0)     cfg->safe_after_ms = 0;
+    if (cfg->safe_miss_pct < 0)     cfg->safe_miss_pct = 0;
+    if (cfg->safe_miss_pct > 100)   cfg->safe_miss_pct = 100;
     return 0;
 }
 
@@ -238,8 +295,14 @@ void dw_config_print(const dw_config_t *cfg)
            cfg->sensor_period_ms, cfg->sensor_prio,
            cfg->rogue_duty_pct, cfg->rogue_prio, cfg->rogue_demoted_prio,
            cfg->supervisor_prio);
-    printf("config: guard=%s rogue=%s duration=%ds log=%s\n",
+    printf("config: mode=%s guard=%s rogue=%s duration=%ds safe_after=%dms "
+           "safe_miss=%d%% rescue_boost=%s log=%s\n",
+           cfg->mode == DW_MODE_SYSTEM ? "system" : "local",
            cfg->guard_on ? "on" : "off",
            cfg->rogue_on ? "on" : "off",
-           cfg->duration_s, cfg->log_path);
+           cfg->duration_s, cfg->safe_after_ms, cfg->safe_miss_pct,
+           cfg->rescue_boost ? "on" : "off", cfg->log_path);
+    for (int i = 0; i < cfg->n_demote_pids; i++)
+        printf("config: will also demote pid %d when enforcing\n",
+               cfg->demote_pids[i]);
 }

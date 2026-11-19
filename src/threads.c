@@ -1,5 +1,5 @@
 /*
- * DeadlineWatch — worker threads: control loop, sensor, rogue.
+ * DeadlineWatch — local-mode worker threads: control loop, sensor, rogue.
  *
  * The control loop and sensor are periodic threads. Each cycle they do a
  * fixed amount of stand-in work, then report completion to the supervisor
@@ -17,16 +17,16 @@
  * It reports progress every 100 windows so the supervisor (and the demo)
  * can show its throughput dropping when it is throttled.
  */
-#include <time.h>
-
 #include "dw.h"
+
+#include <time.h>
 
 /* Stand-in workload: a deterministic compute loop the compiler cannot
  * remove (volatile accumulator). This stands in for a real control
  * computation; the iteration count is a config knob (control_work_iters /
  * sensor_work_iters) to calibrate on the target so the control loop's
  * work takes ~1 ms. */
-static void dw_burn(int iters)
+void dw_burn(int iters)
 {
     volatile long x = 0;
     for (int i = 0; i < iters; i++)
@@ -39,8 +39,18 @@ static void *dw_periodic_thread(dw_ctx_t *ctx, int period_ms, int work_iters,
 {
     long cycle = 0;
     struct timespec next;
+    int safe_reported = 0;
 
     while (!ctx->stop) {
+        /* Safe state: in local mode there is no real actuator, so the
+           stand-in "output" is simply held at zero and said once. The
+           loop keeps reporting so the log shows whether it is healthy. */
+        if (ctx->safe_state && !safe_reported &&
+            pulse_code == DW_PULSE_CONTROL_DONE) {
+            safe_reported = 1;
+            printf("control: SAFE STATE commanded by supervisor; "
+                   "output held at zero (in-process demo, no actuator)\n");
+        }
         dw_burn(work_iters);
         MsgSendPulse(ctx->coid, prio, (int8_t)pulse_code, (int)cycle);
         cycle++;
@@ -87,9 +97,10 @@ void *dw_rogue_thread(void *arg)
         struct timespec wstart, now;
         clock_gettime(CLOCK_MONOTONIC, &wstart);
 
-        long burn_ms = (long)ctx->cfg.rogue_work_window_ms *
-                       ctx->cfg.rogue_duty_pct / 100;
-        long burn_us = burn_ms * 1000L;
+        /* Work in microseconds: with a 10 ms window, integer
+           milliseconds would turn 85% into 8 ms (80%). */
+        long window_us = (long)ctx->cfg.rogue_work_window_ms * 1000L;
+        long burn_us = window_us * ctx->cfg.rogue_duty_pct / 100;
 
         /* Burn CPU for the duty share of the window. */
         do {
@@ -100,11 +111,11 @@ void *dw_rogue_thread(void *arg)
         } while (dw_diff_us(&wstart, &now) < burn_us);
 
         /* Sleep the rest of the window. */
-        long sleep_ms = ctx->cfg.rogue_work_window_ms - burn_ms;
-        if (sleep_ms > 0) {
+        long sleep_us = window_us - burn_us;
+        if (sleep_us > 0) {
             struct timespec rem;
-            rem.tv_sec = 0;
-            rem.tv_nsec = sleep_ms * 1000000L;
+            rem.tv_sec = sleep_us / 1000000L;
+            rem.tv_nsec = (sleep_us % 1000000L) * 1000L;
             nanosleep(&rem, NULL);
         }
 

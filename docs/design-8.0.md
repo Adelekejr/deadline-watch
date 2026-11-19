@@ -6,8 +6,7 @@
 DeadlineWatch design as originally briefed — create CPU partitions, join
 threads to them, change budgets at runtime, query partition statistics —
 cannot run on SDP 8.0 or the QEMU Quick Start Target Image. Verified three
-independent ways in the official 8.0 documentation (full notes with all
-sources: `~/workspace/hackathon-research/qnx-aps-apis.md`):
+independent ways in the official 8.0 documentation:
 
 1. IDE User Guide, Target Navigator (8.0): *"QNX OS 8.0 does not support
    adaptive partitioning; if your target is based on 8.0, then APS can't be
@@ -30,76 +29,78 @@ replacement CPU-budgeting feature is named anywhere in the 8.0 docs read.
 Killed: the mechanism. No partitions, no partition budgets, no
 `SCHED_APS_MODIFY_PARTITION` throttle, no partition statistics.
 
-Survives: the idea, the demo, and the category. A runtime supervisor that
-watches real-time threads, enforces their deadlines while the system is
-under attack, and keeps a black-box record is still buildable on 8.0 —
-only the enforcement mechanism changes. The demo (far fewer missed
-deadlines with the guard on than with it off, measured 9.8% vs 38.9%
-on QEMU) is unchanged in shape, and the entry
-stays in Low-level Software.
+Survives: the idea and the demo. A runtime supervisor that watches
+real-time work, enforces deadlines while the system is under attack, and
+keeps a black-box record is still buildable on 8.0; only the enforcement
+mechanism changes. The entry is in the **Robotics & Medical** category
+(real-time applications where timing, safety, or reliability is
+critical), framed around a simulated infusion-pump dose loop.
 
-## The 8.0 redesign (what this repo builds)
+## The 8.0 design (what this repo builds)
 
-- **Scheduling:** strict-priority `SCHED_FIFO`. Supervisor at the highest
-  priority, control loop next, sensor below it, rogue above the control
-  loop (so it starves the loop when the guard is off).
-- **Measurement:** application-measured, not read from a partition API.
-  Each thread reports completion with a pulse carrying its cycle index;
-  the supervisor timestamps arrival against the deadline
-  (`start + (cycle+1) * period`, `CLOCK_MONOTONIC`). A 1 ms watchdog
-  timer pulse catches starvation — a cycle whose deadline passes with no
-  pulse at all is a miss.
-- **Enforcement:** when the control loop misses twice in a row, the
-  supervisor demotes every rogue thread to a priority below the control
-  loop (`pthread_setschedparam()`), so the loop preempts the rogue and
-  recovers. If it still misses, the rogue drops to the minimum priority
-  (escalation, once). The rogue stays demoted for the rest of the run.
-  The "safe state" is: rogue demoted + a THROTTLE record in the log.
-- **Multi-CPU QEMU:** the guest defaults to 8 CPUs, and one rogue thread
-  can only hog one CPU. So the rogue is one thread *per online CPU*
-  (detected at runtime), all at the same high priority, each burning a
-  configurable share of every 10 ms window. That is what makes the
-  starvation real on an 8-CPU guest.
-- **Log:** black-box CSV (`deadline-watch.csv`), one row per cycle plus
-  supervisor events; `host/render.py` turns it into the jitter graph.
+- **Policy vs mechanism.** `src/dw_core.c` decides *when* a cycle is a
+  miss and *when* to act; it has no QNX calls and is unit-tested on the
+  host (`tests/test_core.c`). `src/supervisor.c` carries the decisions out
+  with QNX calls.
+- **Scheduling:** strict-priority `SCHED_FIFO`. Supervisor highest (30),
+  critical loop next (20), tracked sensor below it (15), offender above
+  the critical loop (25) so it starves the loop when the guard is off.
+- **IPC:** one supervisor channel created with
+  `ChannelCreate(_NTO_CHF_FIXED_PRIORITY | ...)`, so receiving from a
+  low-priority client never lowers the supervisor's priority.
+  - *local mode:* worker threads report with `MsgSendPulse()`.
+  - *system mode:* the channel is published with
+    `dispatch_create_channel()` + `name_attach("deadline-watch")`. Other
+    processes `name_open()` it and use `MsgSend()` (REGISTER / BEAT /
+    PROGRESS). The supervisor takes the sender's pid/tid from the
+    kernel's `struct _msg_info`, never from the message, and gets
+    `_PULSE_CODE_DISCONNECT` when a client dies (`_NTO_CHF_DISCONNECT`).
+- **Measurement:** cycle *k* of a task with period *P* has deadline
+  `epoch + (k+1)P` on `CLOCK_MONOTONIC` (system-wide, so a client's epoch
+  is the supervisor's registration timestamp). A 1 ms `timer_create()`
+  pulse (`SIGEV_PULSE_INIT`) is the watchdog: a cycle whose deadline plus
+  2 ms grace passes with no report is a starvation miss.
+- **Enforcement ladder** (critical tasks only):
+  1. THROTTLE: 2 consecutive misses → demote every offender thread below
+     the critical loop. Local threads: `pthread_setschedparam()`.
+     Other processes: `SchedSet(pid, tid, ...)`. Unregistered processes
+     named with `--demote-pid`: every thread id that exists in them.
+  2. ESCALATE: 4 more consecutive misses → offenders to the minimum
+     priority.
+  3. SAFE_STATE: enforcement exhausted (or nothing can be demoted) and
+     the critical task still fails, for 300 ms continuously or 50 % of a
+     1 s window, or its process died → the next BEAT reply carries
+     `DW_CMD_SAFE_STATE`, and the critical threads are boosted just
+     below the supervisor (`SchedSet`) so they can run their safe-state
+     code even if the offender could not be demoted. Latched, like a
+     real alarm.
+- **Multi-CPU QEMU:** the guest defaults to 8 CPUs, and one offender
+  thread can only hog one CPU, so the rogue runs one thread per online
+  CPU.
+- **Log:** black-box CSV, one row per cycle plus every supervisor event,
+  flushed at least once a second; `host/render.py` renders it after the
+  run or live (`--follow`).
 
-## Why not QNX 7.1, and why not switch to BudgetCheck
+## Limits of the 8.0 mechanism (stated plainly)
 
-- **7.1 is not an option for this contest.** The hackathon requires a
-  project that "runs on or targets QNX 8.0", the free QNX Everywhere
-  licence is for SDP 8.0, and the QEMU image is 8.0. A 7.1 build with real
-  APS would be a different project on a different OS version.
-- **BudgetCheck (8.4) stays the fallback, not the pick.** The supervisor
-  path is not genuinely blocked — only its APS mechanism is. The core
-  idea and the strongest demo survive the redesign, so switching would
-  discard the best demo for a marginal buildability gain. Switch only if
-  the 8.0 supervisor path hits a wall during the skeleton/enforcement
-  days — for example, if real-time priorities cannot be set in the guest,
-  or the priority-demotion demo does not produce a clean contrast.
+- Priority demotion is not a CPU budget: a demoted offender still runs
+  whenever higher-priority work is idle. That is the intended behaviour
+  for best-effort work, but it is not the hard isolation APS gave on 7.x.
+- A thread that is starved cannot act on any command. The rescue boost
+  addresses that for registered critical threads; a real medical device
+  would still pair this with an independent hardware watchdog.
+- `--demote-pid` walks thread ids 1..256 with `SchedSet()` and treats
+  ESRCH as "no such thread"; a process with sparse thread ids above
+  that range would be missed.
 
-## Honest score revision
+## Open questions
 
-The original 8.6 assumed APS as the mechanism. Without kernel budgets
-the "Best use of QNX-specific Technologies" bonus angle is weaker and
-contest fit drops a notch. Revised estimate for the redesigned entry:
-**~8.2–8.4** — roughly tied with BudgetCheck (8.4, higher buildability).
-The demo score (the strongest element) is unchanged: a guarantee holding
-under attack is still what the judge watches.
-
-## Open questions (to close once the SDP is installed)
-
-- `SCHED_SPORADIC` is listed as a scheduling policy on the 8.0
-  `sched_setscheduler()` page. Its budget/replenishment semantics were
-  not verified — it could be the closest 8.0 analogue to a CPU budget
-  for the rogue, and is worth one experiment after the priority version
-  works. It is NOT used in the skeleton.
-- Priority numeric range: use `sched_get_priority_min/max()` at runtime
-  (the code does this); the classic "1–255" range is not verified for
-  8.0.
-- How a host-cross-compiled binary gets into the running QSTI guest
-  (no SSH/scp steps in the official QSTI docs; self-hosted compile in
-  the guest is the documented route). See README.md.
-- Which QEMU version Ubuntu 24.04's apt provides, and whether stock apt
-  QEMU boots the QSTI (the guide recommends building QEMU 10.1.2).
-- `ClockPeriod()` set-ability on 8.0 (not relied on; the 1 ms watchdog
-  uses a timer, not the system tick).
+- `SCHED_SPORADIC` is listed on the 8.0 `sched_setscheduler()` page. It
+  could be the closest 8.0 analogue to a per-thread CPU budget for
+  offenders. Not used yet.
+- Priority numeric range: the code queries
+  `sched_get_priority_min/max()` at runtime and clamps.
+- QEMU/TCG host stalls (up to ~185 ms observed) freeze the guest while
+  its clock keeps running, which produces misses with no thread at
+  fault. Real hardware (e.g. a Raspberry Pi 5) would give cleaner
+  numbers.
