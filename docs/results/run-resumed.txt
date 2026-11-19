@@ -1,0 +1,1 @@
+VM reset at ~16:15 WAT after a guest hang during the first local d100 pass; resumed Thu Nov 19 15:15:18 GMT 2026

@@ -1,0 +1,15 @@
+== pump Cpid-demote-pid-r1: deadline-watch --demote-pid=<rogue> | dw-rogue --register=off
+pump-dose [critical]: 3104 cycles judged (3097 completed), 7 misses (0.2%), longest miss streak 4 (40 ms), worst lateness 25063 us, mean -9201 us
+pump-pressure: 621 cycles judged (621 completed), 0 misses (0.0%), longest miss streak 0 (0 ms), worst lateness 0 us, mean -49340 us
+throttle events: 1, offender final priority: 1, safe state: no
+[pump  30.0s] prescribed  1.0011 mL  delivered  1.0013 mL  dose error  +0.02%  line 23.8 kPa  infusing
+== pump Cpid-demote-pid-r2: deadline-watch --demote-pid=<rogue> | dw-rogue --register=off
+pump-dose [critical]: 3110 cycles judged (3090 completed), 21 misses (0.7%), longest miss streak 6 (60 ms), worst lateness 39062 us, mean -8574 us
+pump-pressure: 622 cycles judged (620 completed), 2 misses (0.3%), longest miss streak 2 (100 ms), worst lateness 5875 us, mean -48928 us
+throttle events: 1, offender final priority: 1, safe state: no
+[pump  30.1s] prescribed  1.0031 mL  delivered  1.0033 mL  dose error  +0.02%  line 23.8 kPa  infusing
+== pump Cpid-demote-pid-r3: deadline-watch --demote-pid=<rogue> | dw-rogue --register=off
+pump-dose [critical]: 3107 cycles judged (3096 completed), 12 misses (0.4%), longest miss streak 5 (50 ms), worst lateness 25767 us, mean -9230 us
+pump-pressure: 622 cycles judged (622 completed), 0 misses (0.0%), longest miss streak 0 (0 ms), worst lateness 0 us, mean -49204 us
+throttle events: 1, offender final priority: 5, safe state: no
+[pump  30.1s] prescribed  1.0021 mL  delivered  1.0023 mL  dose error  +0.02%  line 21.9 kPa  infusing

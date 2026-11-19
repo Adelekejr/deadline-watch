@@ -1,0 +1,114 @@
+config: supervisor @prio 30, offenders demoted to prio 5 (tasks and offenders are other processes)
+config: mode=system guard=on rogue=n/a duration=36s safe_after=300ms safe_miss=50% rescue_boost=on log=docs/results/pump-B-guard-on-r3.csv
+deadline-watch: system mode, listening as /dev/name/local/deadline-watch (guard on)
+deadline-watch: start clients now, e.g. ./dw-pump & ./dw-rogue
+[   1s] guard ARMED        offenders@prio 25  offender work/s 0
+[   2s] guard ARMED        offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   0.0%  worst    0.0 ms
+        pump-pressure       misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   3s] guard ARMED        offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   0.0%  worst    0.0 ms
+        pump-pressure       misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   4s] guard ARMED        offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   0.0%  worst    0.0 ms
+        pump-pressure       misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   5s] guard THROTTLED    offenders@prio 5   offender work/s 0
+        pump-dose           misses/s |....................|   3  total   0.8%  worst    2.6 ms
+        pump-pressure       misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   6s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        pump-dose           misses/s |....................|   0  total   0.6%  worst    2.6 ms
+        pump-pressure       misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   7s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        pump-dose           misses/s |....................|   0  total   0.5%  worst    2.6 ms
+        pump-pressure       misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   8s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        pump-dose           misses/s |....................|   0  total   0.4%  worst    2.6 ms
+        pump-pressure       misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   9s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        pump-dose           misses/s |....................|   0  total   0.4%  worst    2.6 ms
+        pump-pressure       misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  10s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        pump-dose           misses/s |....................|   0  total   0.3%  worst    2.6 ms
+        pump-pressure       misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  11s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        pump-dose           misses/s |....................|   0  total   0.3%  worst    2.6 ms
+        pump-pressure       misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  12s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        pump-dose           misses/s |....................|   0  total   0.3%  worst    2.6 ms
+        pump-pressure       misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  13s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        pump-dose           misses/s |....................|   0  total   0.3%  worst    2.6 ms
+        pump-pressure       misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  14s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        pump-dose           misses/s |....................|   0  total   0.2%  worst    2.6 ms
+        pump-pressure       misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  15s] guard ESCALATED    offenders@prio 1   offender work/s 400
+        pump-dose           misses/s |#####...............|  25  total   2.0%  worst  131.0 ms
+        pump-pressure       misses/s |#####...............|   5  total   1.8%  worst   50.6 ms
+[  16s] guard ESCALATED    offenders@prio 1   offender work/s 400
+        pump-dose           misses/s |....................|   0  total   1.9%  worst  131.0 ms
+        pump-pressure       misses/s |....................|   0  total   1.7%  worst   50.6 ms
+[  17s] guard ESCALATED    offenders@prio 1   offender work/s 400
+        pump-dose           misses/s |....................|   0  total   1.8%  worst  131.0 ms
+        pump-pressure       misses/s |....................|   0  total   1.6%  worst   50.6 ms
+[  18s] guard ESCALATED    offenders@prio 1   offender work/s 400
+        pump-dose           misses/s |....................|   0  total   1.6%  worst  131.0 ms
+        pump-pressure       misses/s |....................|   0  total   1.5%  worst   50.6 ms
+[  19s] guard ESCALATED    offenders@prio 1   offender work/s 400
+        pump-dose           misses/s |....................|   2  total   1.7%  worst  131.0 ms
+        pump-pressure       misses/s |....................|   0  total   1.4%  worst   50.6 ms
+[  20s] guard ESCALATED    offenders@prio 1   offender work/s 400
+        pump-dose           misses/s |....................|   0  total   1.6%  worst  131.0 ms
+        pump-pressure       misses/s |....................|   0  total   1.3%  worst   50.6 ms
+[  21s] guard ESCALATED    offenders@prio 1   offender work/s 400
+        pump-dose           misses/s |....................|   0  total   1.5%  worst  131.0 ms
+        pump-pressure       misses/s |....................|   0  total   1.3%  worst   50.6 ms
+[  22s] guard ESCALATED    offenders@prio 1   offender work/s 400
+        pump-dose           misses/s |....................|   0  total   1.4%  worst  131.0 ms
+        pump-pressure       misses/s |....................|   0  total   1.2%  worst   50.6 ms
+[  23s] guard ESCALATED    offenders@prio 1   offender work/s 400
+        pump-dose           misses/s |....................|   0  total   1.4%  worst  131.0 ms
+        pump-pressure       misses/s |....................|   0  total   1.1%  worst   50.6 ms
+[  24s] guard ESCALATED    offenders@prio 1   offender work/s 400
+        pump-dose           misses/s |....................|   0  total   1.3%  worst  131.0 ms
+        pump-pressure       misses/s |....................|   0  total   1.1%  worst   50.6 ms
+[  25s] guard ESCALATED    offenders@prio 1   offender work/s 0
+        pump-dose           misses/s |....................|   0  total   1.3%  worst  131.0 ms
+        pump-pressure       misses/s |....................|   0  total   1.0%  worst   50.6 ms
+[  26s] guard ESCALATED    offenders@prio 1   offender work/s 0
+        pump-dose           misses/s |....................|   0  total   1.2%  worst  131.0 ms
+        pump-pressure       misses/s |....................|   0  total   1.0%  worst   50.6 ms
+[  27s] guard ESCALATED    offenders@prio 1   offender work/s 0
+        pump-dose           misses/s |....................|   3  total   1.3%  worst  131.0 ms
+        pump-pressure       misses/s |....................|   0  total   1.0%  worst   50.6 ms
+[  28s] guard ESCALATED    offenders@prio 1   offender work/s 0
+        pump-dose           misses/s |....................|   0  total   1.2%  worst  131.0 ms
+        pump-pressure       misses/s |....................|   0  total   0.9%  worst   50.6 ms
+[  29s] guard ESCALATED    offenders@prio 1   offender work/s 0
+        pump-dose           misses/s |....................|   0  total   1.2%  worst  131.0 ms
+        pump-pressure       misses/s |....................|   0  total   0.9%  worst   50.6 ms
+[  30s] guard ESCALATED    offenders@prio 1   offender work/s 0
+        pump-dose           misses/s |....................|   0  total   1.1%  worst  131.0 ms
+        pump-pressure       misses/s |....................|   0  total   0.9%  worst   50.6 ms
+[  31s] guard ESCALATED    offenders@prio 1   offender work/s 0
+        pump-dose           misses/s |....................|   0  total   1.1%  worst  131.0 ms
+        pump-pressure       misses/s |....................|   0  total   0.8%  worst   50.6 ms
+[  32s] guard ESCALATED    offenders@prio 1   offender work/s 0
+        pump-dose           misses/s |....................|   0  total   1.1%  worst  131.0 ms
+        pump-pressure       misses/s |....................|   0  total   0.8%  worst   50.6 ms
+[  33s] guard ESCALATED    offenders@prio 1   offender work/s 0
+        pump-dose      EXIT misses/s |....................|   0  total   1.1%  worst  131.0 ms
+        pump-pressure  EXIT misses/s |....................|   0  total   0.8%  worst   50.6 ms
+[  34s] guard ESCALATED    offenders@prio 1   offender work/s 0
+        pump-dose      EXIT misses/s |....................|   0  total   1.1%  worst  131.0 ms
+        pump-pressure  EXIT misses/s |....................|   0  total   0.8%  worst   50.6 ms
+[  35s] guard ESCALATED    offenders@prio 1   offender work/s 0
+        pump-dose      EXIT misses/s |....................|   0  total   1.1%  worst  131.0 ms
+        pump-pressure  EXIT misses/s |....................|   0  total   0.8%  worst   50.6 ms
+
+=== DeadlineWatch summary ===
+mode: system, guard: on, duration: 36s
+pump-dose [critical]: 3104 cycles judged (3072 completed), 33 misses (1.1%), longest miss streak 15 (150 ms), worst lateness 130985 us, mean -8781 us
+pump-pressure: 621 cycles judged (616 completed), 5 misses (0.8%), longest miss streak 3 (150 ms), worst lateness 50623 us, mean -49087 us
+throttle events: 1, offender final priority: 1, safe state: no
+log: docs/results/pump-B-guard-on-r3.csv
