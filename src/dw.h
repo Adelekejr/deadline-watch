@@ -23,6 +23,7 @@
 #define DW_H
 
 #define _POSIX_C_SOURCE 200809L
+#define _QNX_SOURCE          /* QNX extensions: SIGEV_PULSE_INIT, _SC_NPROCESSORS_ONLN */
 
 #include <signal.h>
 #include <stdint.h>

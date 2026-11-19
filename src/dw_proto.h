@@ -12,6 +12,10 @@
  *                 (DW_CMD_RUN, or DW_CMD_SAFE_STATE once the supervisor
  *                 has decided the critical loop must go to its safe state)
  *   PROGRESS   -> best-effort work report (for the throughput graph)
+ *   UNREGISTER -> clean exit. A client that disappears WITHOUT this
+ *                 (crash, kill) is reported LOST via the kernel's
+ *                 _PULSE_CODE_DISCONNECT; a lost CRITICAL task is a
+ *                 safe-state event.
  *
  * The supervisor learns the sender's pid/tid from the kernel
  * (struct _msg_info), not from the message, so a client cannot claim to
@@ -32,6 +36,7 @@
 #define DW_REQ_REGISTER  1
 #define DW_REQ_BEAT      2
 #define DW_REQ_PROGRESS  3
+#define DW_REQ_UNREGISTER 4   /* clean exit: not a LOST event */
 
 /* Registration kinds. */
 #define DW_KIND_CRITICAL  1   /* deadline-tracked, drives enforcement, gets SAFE_STATE */

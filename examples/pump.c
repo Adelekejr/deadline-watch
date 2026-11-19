@@ -26,6 +26,7 @@
  *   ./dw-pump [--rate=ML_PER_H] [--duration=S] [--prio=N] [--work=ITERS]
  */
 #define _POSIX_C_SOURCE 200809L
+#define _QNX_SOURCE          /* QNX extensions: SIGEV_PULSE_INIT, _SC_NPROCESSORS_ONLN */
 #include <errno.h>
 #include <pthread.h>
 #include <sched.h>
@@ -184,13 +185,23 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    for (int s = 1; !g_stop && (g_duration <= 0 || s <= g_duration); s++) {
+    /* Status printer: normal priority on purpose (like a UI). When the
+       CPU is hogged above it, lines go missing; the timestamp is real
+       elapsed time, so gaps are visible. */
+    struct timespec t0, tn;
+    clock_gettime(CLOCK_MONOTONIC, &t0);
+    for (;;) {
         sleep(1);
+        clock_gettime(CLOCK_MONOTONIC, &tn);
+        double el = (double)(tn.tv_sec - t0.tv_sec) +
+                    (double)(tn.tv_nsec - t0.tv_nsec) / 1e9;
+        if (g_stop || (g_duration > 0 && el >= g_duration + 0.5))
+            break;
         double tgt = g_target_ml, got = g_delivered_ml;
         double err = tgt > 0 ? 100.0 * (got - tgt) / tgt : 0.0;
-        printf("[pump %3ds] prescribed %7.4f mL  delivered %7.4f mL  "
+        printf("[pump %5.1fs] prescribed %7.4f mL  delivered %7.4f mL  "
                "dose error %+6.2f%%  line %4.1f kPa  %s\n",
-               s, tgt, got, err, g_pressure_kpa,
+               el, tgt, got, err, g_pressure_kpa,
                g_alarm == 1 ? "ALARM: SAFE STATE (motor stopped by guard)"
                : g_alarm == 2 ? "ALARM: guard unreachable, motor stopped"
                : "infusing");

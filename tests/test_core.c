@@ -125,6 +125,7 @@ static void test_ladder(void)
     CHECK(seen_escalate == 63, "ESCALATE after 4 more misses (63 ms)");
     CHECK(seen_safe == 323, "SAFE_STATE after 300 ms of failure post-escalation");
     CHECK(c.throttle_events == 1, "one throttle event");
+    CHECK(c.task[ti].max_consecutive >= 30, "longest miss streak recorded");
     CHECK(c.safe_state == 1, "safe state latched");
     /* Latched: nothing more happens. */
     struct timespec now = at_ms(&e, 700);
@@ -212,6 +213,11 @@ static void test_lost(void)
     CHECK(dw_core_lost(&c, trk, &now) == 0, "losing a tracked task is not a safe-state event");
     CHECK(dw_core_lost(&c, crit, &now) & DW_ACT_SAFE_STATE, "losing the critical loop -> safe state");
     CHECK(n_lost_rows == 2, "LOST rows logged");
+    int crit2 = dw_core_add_task(&c, "pump-dose-2", DW_ROLE_CRITICAL, 10, &e);
+    dw_core_unregister(&c, crit2, &now);
+    CHECK(!c.task[crit2].active, "unregister stops tracking");
+    CHECK(strcmp(last_event, "UNREGISTER") == 0, "UNREGISTER row logged");
+    CHECK(dw_core_tick(&c, &now) == 0, "an unregistered task is never starved");
     int ti3 = dw_core_add_task(&c, "new", DW_ROLE_CRITICAL, 10, &e);
     CHECK(ti3 != crit && ti3 != trk, "slots are not reused (log names stay unique)");
     CHECK(dw_core_add_task(&c, "bad", DW_ROLE_CRITICAL, 0, &e) == -1, "period 0 rejected");

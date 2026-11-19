@@ -55,6 +55,8 @@ int dw_client_progress(dw_client_t *c, long units);
  * supervisor counts it). Returns the next cycle index to run. */
 long dw_client_wait_next(const dw_client_t *c, long cycle);
 
+/* Unregister (a clean exit, logged as UNREGISTER rather than LOST) and
+ * disconnect. */
 void dw_client_close(dw_client_t *c);
 
 #endif /* DW_CLIENT_H */

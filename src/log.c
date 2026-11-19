@@ -13,7 +13,7 @@
  * - CYCLE rows are written for every reported control/sensor cycle.
  * - MISS rows are written when the watchdog declares a cycle missed
  *   because no completion pulse arrived (starvation).
- * - THROTTLE / ESCALATE / SAFE_STATE / RECOVER / REGISTER / LOST /
+ * - THROTTLE / ESCALATE / SAFE_STATE / RECOVER / REGISTER / UNREGISTER / LOST /
  *   ROGUE / START / END / SUMMARY are supervisor events; their `detail`
  *   field is free text (no commas).
  * - The file is flushed at least once a second (and on every non-CYCLE
@@ -38,7 +38,7 @@ int dw_log_open(dw_ctx_t *ctx)
         "# format: t_ms,thread,event,cycle,lateness_us,worst_us,detail\n"
         "# lateness_us is signed: negative = before deadline, positive = late\n"
         "# a cycle is a miss exactly when lateness_us > 0\n"
-        "# events: START, CYCLE, MISS, THROTTLE, ESCALATE, SAFE_STATE, RECOVER, REGISTER, LOST, ROGUE, END, SUMMARY\n"
+        "# events: START, CYCLE, MISS, THROTTLE, ESCALATE, SAFE_STATE, RECOVER, REGISTER, UNREGISTER, LOST, ROGUE, END, SUMMARY\n"
         "# mode=%s guard=%s rogue=%s duration=%ds\n",
         ctx->cfg.mode == DW_MODE_SYSTEM ? "system" : "local",
         ctx->cfg.guard_on ? "on" : "off",
@@ -105,13 +105,16 @@ void dw_log_summary(dw_ctx_t *ctx)
         dw_task_t *st = &ctx->core.task[i];
         if (!st->name[0])
             continue;
-        char detail[128];
-        double miss_pct = st->cycles > 0
-            ? 100.0 * (double)st->misses / (double)st->cycles : 0.0;
+        char detail[160];
+        long judged = st->expected_cycle;   /* completed + starved/skipped */
+        double miss_pct = judged > 0
+            ? 100.0 * (double)st->misses / (double)judged : 0.0;
         long mean = st->cycles > 0 ? st->total_lateness_us / st->cycles : 0;
         snprintf(detail, sizeof(detail),
-                 "cycles=%ld misses=%ld miss_pct=%.1f worst_us=%ld mean_us=%ld",
-                 st->cycles, st->misses, miss_pct, st->worst_lateness_us, mean);
+                 "judged=%ld cycles=%ld misses=%ld miss_pct=%.1f "
+                 "max_streak=%ld worst_us=%ld mean_us=%ld", judged, st->cycles,
+                 st->misses, miss_pct, st->max_consecutive,
+                 st->worst_lateness_us, mean);
         dw_log_row(ctx, &now, st->name, "SUMMARY", st->cycles, 0,
                    st->worst_lateness_us, detail);
     }

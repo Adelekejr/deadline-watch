@@ -313,6 +313,20 @@ static void dw_handle_msg(dw_ctx_t *ctx, long rcvid,
         if (m->value > 0 && m->value < 1000000)
             ctx->rogue_progress += (long)m->value;
         r.slot = m->slot;
+    } else if (m->req == DW_REQ_UNREGISTER && m->slot >= 0 &&
+               m->slot < DW_MAX_TASKS && ctx->core.task[m->slot].active &&
+               ctx->core.task[m->slot].scoid == info->scoid) {
+        dw_core_unregister(&ctx->core, m->slot, now);
+        r.slot = m->slot;
+    } else if (m->req == DW_REQ_UNREGISTER && m->slot >= DW_MAX_TASKS &&
+               m->slot < DW_MAX_TASKS + ctx->n_target &&
+               ctx->target[m->slot - DW_MAX_TASKS].active &&
+               ctx->target[m->slot - DW_MAX_TASKS].scoid == info->scoid) {
+        dw_target_t *t = &ctx->target[m->slot - DW_MAX_TASKS];
+        t->active = 0;
+        dw_refresh_targets(ctx);
+        dw_log_row(ctx, now, t->name, "UNREGISTER", 0, 0, 0, "clean exit");
+        r.slot = m->slot;
     } else {
         r.status = EPERM;   /* unknown slot, or not the connection that owns it */
     }
@@ -380,7 +394,9 @@ static void dw_live_line(dw_ctx_t *ctx, const struct timespec *now)
         n += (size_t)snprintf(buf + n, sizeof(buf) - n,
                               "        %-14s %s misses/s |%s| %3ld  "
                               "total %5.1f%%  worst %6.1f ms\n",
-                              t->name, t->active ? "    " : "LOST", b,
+                              t->name,
+                              t->gone == 2 ? "LOST" : t->gone == 1 ? "EXIT" : "    ",
+                              b,
                               new_miss, pct,
                               (double)t->worst_lateness_us / 1000.0);
     }
@@ -621,13 +637,19 @@ static void dw_print_summary(const dw_ctx_t *ctx)
         const dw_task_t *st = &ctx->core.task[i];
         if (!st->name[0])
             continue;
-        double miss_pct = st->cycles > 0
-            ? 100.0 * (double)st->misses / (double)st->cycles : 0.0;
+        /* Miss % is over cycles JUDGED (completed + starved/skipped),
+           i.e. every period that elapsed, not just completed cycles. */
+        long judged = st->expected_cycle;
+        double miss_pct = judged > 0
+            ? 100.0 * (double)st->misses / (double)judged : 0.0;
         long mean = st->cycles > 0 ? st->total_lateness_us / st->cycles : 0;
-        printf("%s%s: %ld cycles, %ld misses (%.1f%%), worst lateness %ld us, "
+        printf("%s%s: %ld cycles judged (%ld completed), %ld misses (%.1f%%), "
+               "longest miss streak %ld (%ld ms), worst lateness %ld us, "
                "mean %ld us\n",
                st->name, st->role == DW_ROLE_CRITICAL ? " [critical]" : "",
-               st->cycles, st->misses, miss_pct, st->worst_lateness_us, mean);
+               judged, st->cycles, st->misses, miss_pct,
+               st->max_consecutive, st->max_consecutive * st->period_ms,
+               st->worst_lateness_us, mean);
     }
     printf("throttle events: %ld, offender final priority: %d, safe state: %s\n",
            ctx->core.throttle_events, ctx->rogue_prio_current,

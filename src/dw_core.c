@@ -179,6 +179,8 @@ static int dw_core_miss(dw_core_t *c, int ti, long cycle,
     long late = (long)dw_diff_us(deadline, now);
     t->misses++;
     t->consecutive_misses++;
+    if (t->consecutive_misses > t->max_consecutive)
+        t->max_consecutive = t->consecutive_misses;
     t->clean_cycles = 0;
     if (late > t->worst_lateness_us)
         t->worst_lateness_us = late;
@@ -221,6 +223,8 @@ int dw_core_report(dw_core_t *c, int ti, long cycle, const struct timespec *now)
     if (late > 0) {
         t->misses++;
         t->consecutive_misses++;
+        if (t->consecutive_misses > t->max_consecutive)
+            t->max_consecutive = t->consecutive_misses;
         t->clean_cycles = 0;
         acts |= dw_core_check(c, ti, now);
         acts |= dw_core_window(c, ti, 1, now);
@@ -268,9 +272,21 @@ int dw_core_lost(dw_core_t *c, int ti, const struct timespec *now)
         return DW_ACT_NONE;
     dw_task_t *t = &c->task[ti];
     t->active = 0;
+    t->gone = 2;
     dw_core_log(c, now, t->name, "LOST", t->expected_cycle, 0,
                 t->worst_lateness_us, "task's process disconnected");
     if (t->role == DW_ROLE_CRITICAL)
         return dw_core_safe(c, ti, now, "lost");
     return DW_ACT_NONE;
+}
+
+void dw_core_unregister(dw_core_t *c, int ti, const struct timespec *now)
+{
+    if (ti < 0 || ti >= DW_MAX_TASKS || !c->task[ti].active)
+        return;
+    dw_task_t *t = &c->task[ti];
+    t->active = 0;
+    t->gone = 1;
+    dw_core_log(c, now, t->name, "UNREGISTER", t->expected_cycle, 0,
+                t->worst_lateness_us, "clean exit");
 }
