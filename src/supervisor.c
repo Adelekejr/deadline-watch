@@ -100,6 +100,7 @@ static void dw_demote_all(dw_ctx_t *ctx, int prio, int *ok_out, int *total_out,
     }
     for (int i = 0; i < ctx->cfg.n_demote_pids; i++) {
         int n = dw_demote_pid(ctx->cfg.demote_pids[i], prio);
+        ctx->pid_threads[i] = n;
         ok += n;
         total += n > 0 ? n : 1;
         if (n == 0 && !err)
@@ -109,6 +110,22 @@ static void dw_demote_all(dw_ctx_t *ctx, int prio, int *ok_out, int *total_out,
     *ok_out = ok;
     *total_out = total;
     *err_out = err;
+}
+
+static void dw_redemote_pids(dw_ctx_t *ctx, const struct timespec *now)
+{
+    for (int i = 0; i < ctx->cfg.n_demote_pids; i++) {
+        int n = dw_demote_pid(ctx->cfg.demote_pids[i], ctx->rogue_prio_current);
+        if (n > ctx->pid_threads[i]) {
+            char detail[128];
+            snprintf(detail, sizeof(detail),
+                     "pid %d has %d new thread(s): demoted to prio %d",
+                     ctx->cfg.demote_pids[i], n - ctx->pid_threads[i],
+                     ctx->rogue_prio_current);
+            dw_log_row(ctx, now, "supervisor", "THROTTLE", 0, 0, 0, detail);
+        }
+        ctx->pid_threads[i] = n;
+    }
 }
 
 static void dw_refresh_targets(dw_ctx_t *ctx)
@@ -479,6 +496,13 @@ int dw_supervisor_run(dw_ctx_t *ctx)
                 break;
             case DW_PULSE_TIMER:
                 acts = dw_core_tick(&ctx->core, &now);
+                /* A --demote-pid process may create threads after it was
+                   demoted (seen on QNX: a rogue that starts its burners
+                   late escaped a THROTTLE that came first). Every 50 ms
+                   while throttled, re-apply the demotion to the whole pid. */
+                if (++ctx->tick_count % 50 == 0 && ctx->core.throttled &&
+                    !ctx->core.safe_state)
+                    dw_redemote_pids(ctx, &now);
                 if (dw_diff_us(&ctx->last_second, &now) >= 1000000L)
                     dw_second(ctx, &now);
                 if (ctx->cfg.duration_s > 0 &&

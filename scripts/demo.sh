@@ -5,6 +5,7 @@
 #   sh scripts/demo.sh local     # in-process runs (rogue off / guard off / guard on)
 #   sh scripts/demo.sh pump      # cross-process infusion-pump scenarios A, B, C, C'
 #   sh scripts/demo.sh all
+#   sh scripts/demo.sh cpid      # only scenario C' (--demote-pid)
 #
 # Environment: DUR (seconds per run, default 30), REPS (repetitions of
 # each rogue-on run, default 3), DUTY (rogue duty for the pump
@@ -98,9 +99,18 @@ run_pump() {
     done
 }
 
+run_cpid() {     # only C' (after a --demote-pid change)
+    r=1
+    while [ $r -le "$REPS" ]; do
+        scenario_pid "Cpid-demote-pid-r$r"
+        r=$((r + 1))
+    done
+}
+
 case "${1:-all}" in
     local) run_local ;;
     pump)  run_pump ;;
+    cpid)  run_cpid ;;
     all)   run_local; run_pump ;;
-    *) echo "usage: $0 local|pump|all"; exit 2 ;;
+    *) echo "usage: $0 local|pump|cpid|all"; exit 2 ;;
 esac

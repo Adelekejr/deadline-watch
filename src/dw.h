@@ -111,6 +111,8 @@ typedef struct dw_ctx {
     long rogue_windows_total; /* cumulative */
     long last_misses[DW_MAX_TASKS]; /* for the live per-second view */
     struct timespec last_second;
+    int pid_threads[DW_MAX_DEMOTE_PIDS]; /* --demote-pid threads at the demoted prio */
+    unsigned tick_count;
     volatile sig_atomic_t stop;
     volatile sig_atomic_t safe_state; /* read by local worker threads */
 } dw_ctx_t;
