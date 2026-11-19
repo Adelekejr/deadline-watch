@@ -15,8 +15,9 @@ the QNX 8.0 guest, writes:
 
 Other files:
 
-- `pump-scenarios-r{1,2,3}.png`, `local-d100-r1.png`: graphs made by
-  `host/plot_scenarios.py`; `pump-B-guard-on-r1-lateness.png` by `host/render.py`.
+- `pump-timeline-r{1,2,3}.png`, `pump-summary.png`, `local-timeline-r1.png`:
+  graphs made by `python3 host/plot_scenarios.py docs/results --all`;
+  `pump-B-guard-on-r1-lateness.png` by `host/render.py`.
 - `captures/`: console screenshots rendered from the `.out` files.
 - `pre-fix/`: the C′ run that exposed the `--demote-pid` new-thread bug,
   kept as evidence.

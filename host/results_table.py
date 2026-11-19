@@ -150,6 +150,30 @@ def main(d):
               f"{s} ({s * 10} ms) | {act_s} | {dose} | {'yes' if alarm else 'no'} | "
               f"{stall_ms(rows):.0f} ms |")
 
+    print("\n### Pump summary (mean of r1-r3 from exact counts; range = per-run values above)\n")
+    print("| Scenario | Attack-window miss % | Whole-run miss % | Worst dose error | Final dose error |")
+    print("|---|---|---|---|---|")
+    for key in ("A-guard-off", "B-guard-on", "C-safe-state", "Cpid-demote-pid"):
+        att, whole, worst, final = [], [], [], []
+        for rep in ("r1", "r2", "r3"):
+            base = os.path.join(d, f"pump-{key}-{rep}")
+            if not os.path.exists(base + ".csv"):
+                continue
+            rows = parse_log(base + ".csv")
+            task = critical(rows)
+            j, m, _ = task_stats(rows, task)
+            aj, am, _ = task_stats(rows, task, ATTACK)
+            att.append(100.0 * am / aj)
+            whole.append(100.0 * m / j)
+            w, last, _ = pump_dose(base + "-pump.out")
+            worst.append(w)
+            final.append(last)
+        if not att:
+            continue
+        mean = lambda v: sum(v) / len(v)  # noqa: E731
+        print(f"| {key} | {mean(att):.1f} % | {mean(whole):.1f} % | "
+              f"{mean(worst):+.1f} % | {mean(final):+.1f} % |")
+
 
 if __name__ == "__main__":
     main(sys.argv[1] if len(sys.argv) > 1 else "docs/results")

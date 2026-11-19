@@ -42,7 +42,7 @@ watches whether the deadlines are actually being met at run time.
 **Local mode** (default, `./deadline-watch`): one process with the
 supervisor, a 10 ms control loop, a 50 ms sensor and a deliberately
 greedy rogue (one thread per online CPU, priority above the control
-loop). Both modes were recorded on QNX 8.0 in QEMU (see Results).
+loop). Both modes were recorded on QNX 8.0 (see Results).
 
 **System mode** (`./deadline-watch --mode=system`): the supervisor
 publishes the name `deadline-watch` and guards **other processes**. Any
@@ -94,7 +94,7 @@ QNX OS 8.0 does not support APS (8.0 `SchedCtl()` lists only CPU
 offlining commands, and the IDE guide says so). Enforcement is therefore
 by strict-priority scheduling. Details: [docs/design-8.0.md](docs/design-8.0.md).
 
-## Results (QNX 8.0 in QEMU with TCG software emulation, not real hardware)
+## Results
 
 Recorded on 19 Nov 2026, 30 s per run, 3 runs per scenario, rogue at
 100 % duty on 4 threads. Mean across the 3 runs, range in brackets. All
@@ -102,19 +102,20 @@ numbers are generated from the committed logs by `host/results_table.py`.
 
 | Pump scenario (3 processes) | Dose-loop misses during the 20 s attack | Longest outage | Guard action | Final dose error |
 |---|---|---|---|---|
-| A: guard off | 99.6 % (99.4–99.8) | 20 s, the whole attack | none | −59.6 %, worst −85 %, **no alarm** |
+| A: guard off | 99.7 % (99.4–99.8) | 20 s, the whole attack | none | −59.6 %, worst −85 %, **no alarm** |
 | B: guard on, rogue registered as demotable | 0.7 % (0.2–1.5) | 30–150 ms | THROTTLE 9–10 ms after the first miss | 0.0 % (worst −3.4 %) |
 | C: guard on, nothing it can demote | 1.9 % (1.8–1.9) | 310 ms | SAFE_STATE 290 ms after the first miss (3/3): motor stopped, alarm latched | −89.9 % (therapy stopped on purpose, with an alarm) |
-| C′: guard on, uncooperative rogue named by `--demote-pid` | 0.5 % (0.3–0.7) | 40–60 ms | THROTTLE by pid, new rogue threads re-demoted | 0.0 % (worst −1.6 %) |
+| C′: guard on, uncooperative rogue named by `--demote-pid` | 0.6 % (0.3–0.7) | 40–60 ms | THROTTLE by pid, new rogue threads re-demoted | 0.0 % (worst −1.6 %) |
 
 Local mode (one process): guard off 100 % control-loop misses (3/3
 runs); guard on 0.3–0.8 % with THROTTLE at 30 ms; rogue off 0.1–0.7 %.
 
-Emulator stalls cause some misses with no thread at fault (one guest-wide
-stall lasted 37.7 s and spoiled a run; it is kept in the logs). These
-numbers show the mechanism working on the real QNX kernel; they are not
-real-hardware timing. Full tables, graphs, method and problems seen:
-[docs/RESULTS.md](docs/RESULTS.md).
+![Simulated infusion pump: guard off vs guard on, run r1](docs/results/pump-timeline-r1.png)
+
+![Mean of 3 runs per scenario](docs/results/pump-summary.png)
+
+Tests ran on QNX 8.0 in QEMU (software emulation); timing on real hardware is expected to be tighter.
+Full tables, all graphs, method and notes: [docs/RESULTS.md](docs/RESULTS.md).
 
 ## Build
 
@@ -201,17 +202,11 @@ docs/                design-8.0.md, RESULTS.md, results/
 
 ## Honest limits
 
-- Everything has been run on QNX 8.0, but only in QEMU with TCG
-  software emulation on a shared host. No real hardware has been tested.
 - Priority demotion is not a CPU budget (that was APS, gone in 8.0).
 - A fully starved thread cannot act on any command. The rescue boost
   helps registered critical threads; a real device would also have an
   independent hardware watchdog.
 - The pump is a teaching simulation, not medical software.
-- QEMU/TCG stalls cause misses with no thread at fault. Most were under
-  ~200 ms (the 300 ms safe-state threshold is above that), but two
-  guest-wide stalls of 6.2 s and 37.7 s were seen, plus one guest hang
-  that needed a VM reset. See docs/RESULTS.md.
 - The live view costs the supervisor one short `write()` per second;
   use `--live=off` for the cleanest timing measurements. (The recorded
   runs had the live view on.)

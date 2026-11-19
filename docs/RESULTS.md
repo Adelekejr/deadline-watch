@@ -16,13 +16,19 @@ recorded on **19 Nov 2026** on **QNX 8.0** (`QNX qnxvm 8.0.0
 
 | Scenario | Dose-loop misses, attack window | Longest outage | Action | SAFE_STATE | Worst dose error | Final dose error |
 |---|---|---|---|---|---|---|
-| A: guard off | 99.6 % (99.4–99.8) | 20.0 s (20.00–20.04) | none | no (3/3) | −85.2 % (−81.9 to −86.8), **no alarm** | −59.6 % (−59.5 to −59.7) |
+| A: guard off | 99.7 % (99.4–99.8) | 20.0 s (20.00–20.04) | none | no (3/3) | −85.2 % (−81.9 to −86.8), **no alarm** | −59.6 % (−59.5 to −59.7) |
 | B: guard on, rogue demotable | 0.7 % (0.2–1.5) | 83 ms (30–150) | THROTTLE 9–10 ms after first miss | no (0/3) | −1.4 % (0.0 to −3.4) | 0.0 % (3/3) |
 | C: guard on, nothing to demote | 1.9 % (1.8–1.9) | 310 ms (all 3) | SAFE_STATE 290 ms after first miss | **yes (3/3)**, pump alarm latched | −89.9 % (motor stopped on purpose) | −89.9 % |
-| C′: guard on, `--demote-pid` | 0.5 % (0.3–0.7) | 50 ms (40–60) | THROTTLE by pid (+ re-demotion of new threads in r2) | no (0/3) | −1.0 % (0.0 to −1.6) | 0.0 % (3/3) |
+| C′: guard on, `--demote-pid` | 0.6 % (0.3–0.7) | 50 ms (40–60) | THROTTLE by pid (+ re-demotion of new threads in r2) | no (0/3) | −1.0 % (0.0 to −1.6) | 0.0 % (3/3) |
 
-Whole-run miss % (30 s, including the quiet periods): A 64.4 %, B 0.6 %,
-C 1.4 %, C′ 0.4 % (means). Per-run details are below.
+Whole-run miss % (30 s, including the quiet periods): A 64.5 %, B 0.6 %,
+C 1.4 %, C′ 0.4 % (means). Means are taken over the exact counts and
+printed by `host/results_table.py` ("Pump summary"); ranges are the
+per-run values in the tables below.
+
+![Pump scenarios, mean of 3 runs](results/pump-summary.png)
+
+![Pump scenarios over time, run r1](results/pump-timeline-r1.png)
 
 ## Set-up
 
@@ -71,9 +77,12 @@ error = delivered vs prescribed volume, from the pump's own console.
 | Cpid-demote-pid-r2 | 21/3110 (0.7 %) | 15/2001 (0.7 %) | 6 (60 ms) | THROTTLE @3.31s (before the rogue started) | -1.3 % / +0.0 % | no | 58 ms |
 | Cpid-demote-pid-r3 | 12/3107 (0.4 %) | 12/2000 (0.6 %) | 5 (50 ms) | THROTTLE @4.05s (34 ms after first miss) | -1.6 % / +0.0 % | no | 34 ms |
 
-Graphs: [`results/pump-scenarios-r1.png`](results/pump-scenarios-r1.png)
-(also r2 and r3). Console captures:
-[`results/captures/`](results/captures/).
+Graphs: [`results/pump-timeline-r1.png`](results/pump-timeline-r1.png),
+[`r2`](results/pump-timeline-r2.png), [`r3`](results/pump-timeline-r3.png)
+and the 3-run summary [`results/pump-summary.png`](results/pump-summary.png),
+all drawn from these logs by `python3 host/plot_scenarios.py docs/results --all`.
+Hatched areas in the timelines are emulator stalls (supervisor log gaps of
+100 ms or more). Console captures: [`results/captures/`](results/captures/).
 
 What this shows:
 
@@ -130,7 +139,7 @@ What this shows:
 | rogue-off-1 | 2/3000 (0.1 %) | 2 (20 ms) | 0/600 (0.0 %) | none | 61 ms |
 | rogue-off-2 | 21/3000 (0.7 %) | 13 (130 ms) | 0/600 (0.0 %) | none | 31 ms |
 
-Graph: [`results/local-d100-r1.png`](results/local-d100-r1.png).
+Graph: [`results/local-timeline-r1.png`](results/local-timeline-r1.png).
 
 - **Rogue off:** 0.1 % and 0.7 % misses. These come from emulator stalls,
   with no thread at fault (the 0.7 % run had one 130 ms streak).
