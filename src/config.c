@@ -24,7 +24,7 @@ void dw_config_defaults(dw_config_t *cfg)
     cfg->sensor_prio          = 15;
     cfg->rogue_prio           = 25;
     cfg->rogue_demoted_prio   = 5;
-    cfg->rogue_duty_pct       = 85;
+    cfg->rogue_duty_pct       = 100;
     cfg->rogue_work_window_ms = 10;
     cfg->rogue_threads        = 0;   /* 0 = one per online CPU */
     cfg->guard_on             = 1;
@@ -189,7 +189,7 @@ static void dw_usage(const char *prog)
         "  --demote-pid=PID     system mode: also demote every thread of PID when\n"
         "                       enforcing (repeatable, up to 8; for unregistered processes)\n"
         "  --live=on|off        print a live status line every second (default on)\n"
-        "  --rogue-duty=N       rogue burn %% of each 10 ms window (default 85)\n"
+        "  --rogue-duty=N       rogue burn %% of each 10 ms window (default 100)\n"
         "  --rogue-threads=N    rogue thread count, 0 = one per CPU (default 0)\n"
         "  --log=PATH           black-box log file (default deadline-watch.csv)\n"
         "  --help               this text\n",
@@ -289,17 +289,22 @@ int dw_config_parse_args(dw_config_t *cfg, int argc, char **argv)
 
 void dw_config_print(const dw_config_t *cfg)
 {
-    printf("config: control %d ms @prio %d, sensor %d ms @prio %d, "
-           "rogue %d%% duty @prio %d (demote to %d), supervisor @prio %d\n",
-           cfg->control_period_ms, cfg->control_prio,
-           cfg->sensor_period_ms, cfg->sensor_prio,
-           cfg->rogue_duty_pct, cfg->rogue_prio, cfg->rogue_demoted_prio,
-           cfg->supervisor_prio);
+    if (cfg->mode == DW_MODE_LOCAL)
+        printf("config: control %d ms @prio %d, sensor %d ms @prio %d, "
+               "rogue %d%% duty @prio %d (demote to %d), supervisor @prio %d\n",
+               cfg->control_period_ms, cfg->control_prio,
+               cfg->sensor_period_ms, cfg->sensor_prio,
+               cfg->rogue_duty_pct, cfg->rogue_prio, cfg->rogue_demoted_prio,
+               cfg->supervisor_prio);
+    else
+        printf("config: supervisor @prio %d, offenders demoted to prio %d "
+               "(tasks and offenders are other processes)\n",
+               cfg->supervisor_prio, cfg->rogue_demoted_prio);
     printf("config: mode=%s guard=%s rogue=%s duration=%ds safe_after=%dms "
            "safe_miss=%d%% rescue_boost=%s log=%s\n",
            cfg->mode == DW_MODE_SYSTEM ? "system" : "local",
            cfg->guard_on ? "on" : "off",
-           cfg->rogue_on ? "on" : "off",
+           cfg->mode == DW_MODE_SYSTEM ? "n/a" : cfg->rogue_on ? "on" : "off",
            cfg->duration_s, cfg->safe_after_ms, cfg->safe_miss_pct,
            cfg->rescue_boost ? "on" : "off", cfg->log_path);
     for (int i = 0; i < cfg->n_demote_pids; i++)

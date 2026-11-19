@@ -44,6 +44,10 @@ typedef struct {
     long worst_lateness_us;
     long total_lateness_us;   /* sum of signed lateness of reported cycles */
     long consecutive_misses;
+    long streak;              /* current run of misses; unlike consecutive_misses
+                                 it is NOT reset when THROTTLE fires */
+    long max_consecutive;     /* longest run of consecutive misses (outage) */
+    int gone;                 /* 0 active/never, 1 unregistered, 2 lost */
     long expected_cycle;      /* next cycle index not yet accounted for */
     long clean_cycles;        /* consecutive on-time cycles */
     long win_judged;          /* cycles judged in the current 1 s window */
@@ -89,5 +93,7 @@ int dw_core_tick(dw_core_t *c, const struct timespec *now);
 /* The task's process went away. A lost CRITICAL task is a safe-state
  * event when the guard is on (nobody is running that control loop). */
 int dw_core_lost(dw_core_t *c, int ti, const struct timespec *now);
+/* The task said goodbye (clean exit): stop tracking it, no action. */
+void dw_core_unregister(dw_core_t *c, int ti, const struct timespec *now);
 
 #endif /* DW_CORE_H */

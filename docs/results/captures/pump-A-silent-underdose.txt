@@ -1,0 +1,13 @@
+# dw-pump console, scenario A run r1: guard off, silent under-dose, no alarm (QNX 8.0 in QEMU/TCG). Full pump-A-guard-off-r1-pump.out, unedited.
+dw-pump (SIMULATION, not a medical device): pid 2527252, rate 120.0 mL/h, dose loop 10 ms @prio 20
+[pump   1.0s] prescribed  0.0333 mL  delivered  0.0337 mL  dose error  +0.95%  line 23.9 kPa  infusing
+[pump   2.0s] prescribed  0.0667 mL  delivered  0.0670 mL  dose error  +0.39%  line 21.4 kPa  infusing
+[pump   3.0s] prescribed  0.1001 mL  delivered  0.1003 mL  dose error  +0.23%  line 22.7 kPa  infusing
+[pump   9.1s] prescribed  0.3021 mL  delivered  0.1013 mL  dose error -66.46%  line 21.7 kPa  infusing
+[pump  24.0s] prescribed  0.8010 mL  delivered  0.1446 mL  dose error -81.94%  line 21.5 kPa  infusing
+[pump  25.0s] prescribed  0.8344 mL  delivered  0.1883 mL  dose error -77.43%  line 20.3 kPa  infusing
+[pump  26.0s] prescribed  0.8677 mL  delivered  0.2316 mL  dose error -73.31%  line 23.2 kPa  infusing
+[pump  27.0s] prescribed  0.9011 mL  delivered  0.2749 mL  dose error -69.49%  line 21.2 kPa  infusing
+[pump  28.0s] prescribed  0.9345 mL  delivered  0.3182 mL  dose error -65.95%  line 22.2 kPa  infusing
+[pump  29.0s] prescribed  0.9679 mL  delivered  0.3615 mL  dose error -62.65%  line 22.5 kPa  infusing
+[pump  30.0s] prescribed  1.0012 mL  delivered  0.4048 mL  dose error -59.57%  line 23.4 kPa  infusing

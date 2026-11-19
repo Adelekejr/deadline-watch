@@ -125,6 +125,8 @@ static void test_ladder(void)
     CHECK(seen_escalate == 63, "ESCALATE after 4 more misses (63 ms)");
     CHECK(seen_safe == 323, "SAFE_STATE after 300 ms of failure post-escalation");
     CHECK(c.throttle_events == 1, "one throttle event");
+    CHECK(c.task[ti].max_consecutive == c.task[ti].misses && c.task[ti].misses > 30,
+          "streak spans the THROTTLE reset (every miss is in one run)");
     CHECK(c.safe_state == 1, "safe state latched");
     /* Latched: nothing more happens. */
     struct timespec now = at_ms(&e, 700);
@@ -212,6 +214,11 @@ static void test_lost(void)
     CHECK(dw_core_lost(&c, trk, &now) == 0, "losing a tracked task is not a safe-state event");
     CHECK(dw_core_lost(&c, crit, &now) & DW_ACT_SAFE_STATE, "losing the critical loop -> safe state");
     CHECK(n_lost_rows == 2, "LOST rows logged");
+    int crit2 = dw_core_add_task(&c, "pump-dose-2", DW_ROLE_CRITICAL, 10, &e);
+    dw_core_unregister(&c, crit2, &now);
+    CHECK(!c.task[crit2].active, "unregister stops tracking");
+    CHECK(strcmp(last_event, "UNREGISTER") == 0, "UNREGISTER row logged");
+    CHECK(dw_core_tick(&c, &now) == 0, "an unregistered task is never starved");
     int ti3 = dw_core_add_task(&c, "new", DW_ROLE_CRITICAL, 10, &e);
     CHECK(ti3 != crit && ti3 != trk, "slots are not reused (log names stay unique)");
     CHECK(dw_core_add_task(&c, "bad", DW_ROLE_CRITICAL, 0, &e) == -1, "period 0 rejected");
@@ -252,6 +259,21 @@ static void test_miss_rate(void)
     CHECK(dw_core_lost(&c, ti, &now) == 0, "safe state disabled entirely -> lost is only logged");
 }
 
+static void test_future_report(void)
+{
+    dw_core_t c; struct timespec e = { 100, 0 };
+    reset_counts();
+    dw_core_init(&c, 1, 300, log_cb, NULL);
+    c.targets = 1;
+    int ti = dw_core_add_task(&c, "ctl", DW_ROLE_CRITICAL, 10, &e);
+    struct timespec now = at_ms(&e, 55);
+    CHECK(dw_core_report(&c, ti, 1000000000L, &now) == 0 && n_rows == 0,
+          "report for a far-future cycle is ignored (no flood of skipped rows)");
+    CHECK(dw_core_report(&c, ti, 0x7fffffffffffffffL, &now) == 0 && n_rows == 0,
+          "huge cycle value is ignored without overflow");
+    CHECK(c.task[ti].expected_cycle == 0, "bogus reports do not advance the cycle count");
+}
+
 int main(void)
 {
     test_time_helpers();
@@ -263,6 +285,7 @@ int main(void)
     test_recover();
     test_lost();
     test_miss_rate();
+    test_future_report();
     printf("dw_core: %d/%d checks passed\n", checks - fails, checks);
     return fails ? 1 : 0;
 }

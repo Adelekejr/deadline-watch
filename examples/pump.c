@@ -26,7 +26,9 @@
  *   ./dw-pump [--rate=ML_PER_H] [--duration=S] [--prio=N] [--work=ITERS]
  */
 #define _POSIX_C_SOURCE 200809L
+#define _QNX_SOURCE          /* QNX extensions: SIGEV_PULSE_INIT, _SC_NPROCESSORS_ONLN */
 #include <errno.h>
+#include <limits.h>
 #include <pthread.h>
 #include <sched.h>
 #include <stdio.h>
@@ -46,6 +48,8 @@ static int g_prio = 20, g_press_prio = 15, g_duration = 30;
 static int g_work = 200000;
 
 static volatile double g_delivered_ml, g_target_ml, g_pressure_kpa;
+static struct timespec g_epoch;          /* dose loop start (prescription clock) */
+static volatile int g_epoch_set;
 static volatile int g_alarm;          /* 0 none, 1 supervisor safe state, 2 supervisor lost */
 static volatile int g_stop;
 
@@ -83,6 +87,8 @@ static void *dose_thread(void *arg)
     double nominal = rate_ml_ms * DOSE_PERIOD_MS / STEP_ML;
     long max_steps = (long)(nominal * 1.2) + 1;
 
+    clock_gettime(CLOCK_MONOTONIC, &g_epoch);
+    g_epoch_set = 1;
     for (long k = 0; !g_stop; ) {
         burn(g_work);
         double t_ms = (double)(k + 1) * DOSE_PERIOD_MS;
@@ -151,7 +157,12 @@ static int arg_int(const char *a, const char *key, int *out)
     size_t n = strlen(key);
     if (strncmp(a, key, n) != 0)
         return 0;
-    *out = atoi(a + n);
+    char *end = NULL;
+    errno = 0;
+    long v = strtol(a + n, &end, 10);
+    if (errno == ERANGE || end == a + n || *end != '\0' || v < INT_MIN || v > INT_MAX)
+        return 0;   /* not a valid number: falls through to the usage text */
+    *out = (int)v;
     return 1;
 }
 
@@ -170,7 +181,7 @@ int main(int argc, char **argv)
             return 2;
         }
     }
-    if (g_rate_ml_h <= 0) g_rate_ml_h = 120.0;
+    if (!(g_rate_ml_h > 0.0 && g_rate_ml_h <= 10000.0)) g_rate_ml_h = 120.0;  /* also NaN */
     printf("dw-pump (SIMULATION, not a medical device): pid %d, rate %.1f mL/h, "
            "dose loop %d ms @prio %d\n", (int)getpid(), g_rate_ml_h,
            DOSE_PERIOD_MS, g_prio);
@@ -184,13 +195,30 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    for (int s = 1; !g_stop && (g_duration <= 0 || s <= g_duration); s++) {
+    /* Status printer: normal priority on purpose (like a UI). When the
+       CPU is hogged above it, lines go missing; the timestamp is real
+       elapsed time, so gaps are visible. */
+    struct timespec t0, tn;
+    clock_gettime(CLOCK_MONOTONIC, &t0);
+    for (;;) {
         sleep(1);
-        double tgt = g_target_ml, got = g_delivered_ml;
+        clock_gettime(CLOCK_MONOTONIC, &tn);
+        double el = (double)(tn.tv_sec - t0.tv_sec) +
+                    (double)(tn.tv_nsec - t0.tv_nsec) / 1e9;
+        if (g_stop || (g_duration > 0 && el >= g_duration + 0.5))
+            break;
+        /* Prescribed volume from the wall clock, not from the dose loop:
+           if the dose loop is starved it cannot update anything, and a
+           prescription that froze with it would hide the under-dose. */
+        double tgt = 0.0, got = g_delivered_ml;
+        if (g_epoch_set)
+            tgt = g_rate_ml_h / 3600.0 *
+                  ((double)(tn.tv_sec - g_epoch.tv_sec) +
+                   (double)(tn.tv_nsec - g_epoch.tv_nsec) / 1e9);
         double err = tgt > 0 ? 100.0 * (got - tgt) / tgt : 0.0;
-        printf("[pump %3ds] prescribed %7.4f mL  delivered %7.4f mL  "
+        printf("[pump %5.1fs] prescribed %7.4f mL  delivered %7.4f mL  "
                "dose error %+6.2f%%  line %4.1f kPa  %s\n",
-               s, tgt, got, err, g_pressure_kpa,
+               el, tgt, got, err, g_pressure_kpa,
                g_alarm == 1 ? "ALARM: SAFE STATE (motor stopped by guard)"
                : g_alarm == 2 ? "ALARM: guard unreachable, motor stopped"
                : "infusing");

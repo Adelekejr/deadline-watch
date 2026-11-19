@@ -11,11 +11,14 @@
  * the process does not cooperate at all; the supervisor can still demote
  * it with `deadline-watch --demote-pid=<pid printed below>`.
  *
- * Usage (as root): ./dw-rogue [--threads=N] [--prio=25] [--duty=85]
+ * Usage (as root): ./dw-rogue [--threads=N] [--prio=25] [--duty=100]
  *                             [--register=on|off] [--duration=S]
+ *                             [--start-delay=S]  (print pid, wait, then burn)
  */
 #define _POSIX_C_SOURCE 200809L
+#define _QNX_SOURCE          /* QNX extensions: SIGEV_PULSE_INIT, _SC_NPROCESSORS_ONLN */
 #include <errno.h>
+#include <limits.h>
 #include <pthread.h>
 #include <sched.h>
 #include <stdio.h>
@@ -27,9 +30,15 @@
 #include "../src/dw_client.h"
 #include "../src/dw_core.h"
 
-static int g_threads = 0, g_prio = 25, g_duty = 85, g_register = 1;
-static int g_duration = 0;
+static int g_threads = 0, g_prio = 25, g_duty = 100, g_register = 1;
+static int g_duration = 0, g_delay = 0;
 static volatile int g_stop;
+static struct timespec g_end;   /* burners stop themselves here (if g_duration) */
+
+static int past_end(const struct timespec *now)
+{
+    return g_duration > 0 && dw_diff_us(&g_end, now) >= 0;
+}
 
 static void *rogue_thread(void *arg)
 {
@@ -55,6 +64,11 @@ static void *rogue_thread(void *arg)
             for (int i = 0; i < 1000; i++) x += i;
             clock_gettime(CLOCK_MONOTONIC, &now);
         } while (dw_diff_us(&w, &now) < burn_us && !g_stop);
+        /* Each burner checks the end time itself: when the supervisor
+           demotes the whole process (--demote-pid), the main thread is
+           demoted too and cannot get the CPU to stop a 100%-duty burner. */
+        if (past_end(&now))
+            break;
         long rest = window_us - burn_us;
         if (rest > 0) {
             struct timespec r = { rest / 1000000L, (rest % 1000000L) * 1000L };
@@ -70,19 +84,36 @@ static void *rogue_thread(void *arg)
     return NULL;
 }
 
+/* "--key=N" with a whole-string integer check; 1 = parsed. */
+static int arg_int(const char *a, const char *key, int *out)
+{
+    size_t n = strlen(key);
+    if (strncmp(a, key, n) != 0)
+        return 0;
+    char *end = NULL;
+    errno = 0;
+    long v = strtol(a + n, &end, 10);
+    if (errno == ERANGE || end == a + n || *end != '\0' || v < INT_MIN || v > INT_MAX)
+        return 0;   /* not a valid number: falls through to the usage text */
+    *out = (int)v;
+    return 1;
+}
+
 int main(int argc, char **argv)
 {
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i];
-        if (strncmp(a, "--threads=", 10) == 0) g_threads = atoi(a + 10);
-        else if (strncmp(a, "--prio=", 7) == 0) g_prio = atoi(a + 7);
-        else if (strncmp(a, "--duty=", 7) == 0) g_duty = atoi(a + 7);
-        else if (strncmp(a, "--duration=", 11) == 0) g_duration = atoi(a + 11);
+        if (arg_int(a, "--threads=", &g_threads)) ;
+        else if (arg_int(a, "--prio=", &g_prio)) ;
+        else if (arg_int(a, "--duty=", &g_duty)) ;
+        else if (arg_int(a, "--duration=", &g_duration)) ;
+        else if (arg_int(a, "--start-delay=", &g_delay)) ;
         else if (strcmp(a, "--register=on") == 0) g_register = 1;
         else if (strcmp(a, "--register=off") == 0) g_register = 0;
         else {
             fprintf(stderr, "usage: %s [--threads=N] [--prio=N] [--duty=PCT] "
-                    "[--register=on|off] [--duration=S]\n", argv[0]);
+                    "[--register=on|off] [--duration=S] [--start-delay=S]\n",
+                    argv[0]);
             return 2;
         }
     }
@@ -97,6 +128,24 @@ int main(int argc, char **argv)
     printf("dw-rogue: pid %d, %d threads @prio %d, %d%% duty, register=%s\n",
            (int)getpid(), g_threads, g_prio, g_duty, g_register ? "on" : "off");
     fflush(stdout);
+
+    /* The main thread only sleeps and then stops the burners. Run it ABOVE
+       them, or at 100 % duty it would never get the CPU to stop them. */
+    {
+        struct sched_param mp;
+        memset(&mp, 0, sizeof(mp));
+        mp.sched_priority = g_prio + 1;
+        int rc = pthread_setschedparam(pthread_self(), SCHED_FIFO, &mp);
+        if (rc != 0)
+            fprintf(stderr, "dw-rogue: cannot raise main thread to prio %d: %s\n",
+                    g_prio + 1, strerror(rc));
+    }
+
+    if (g_delay > 0)
+        sleep((unsigned)g_delay);   /* lets a script pass our pid to --demote-pid */
+
+    clock_gettime(CLOCK_MONOTONIC, &g_end);
+    g_end.tv_sec += g_duration;
 
     pthread_t t[32];
     int started = 0;

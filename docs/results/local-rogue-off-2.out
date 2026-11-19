@@ -1,0 +1,97 @@
+config: control 10 ms @prio 20, sensor 50 ms @prio 15, rogue 100% duty @prio 25 (demote to 5), supervisor @prio 30
+config: mode=local guard=on rogue=off duration=30s safe_after=300ms safe_miss=50% rescue_boost=on log=docs/results/local-rogue-off.csv
+deadline-watch: local mode (0 rogue threads, guard on)
+[   1s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.0%  worst    0.0 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   2s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.0%  worst    0.0 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   3s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   3  total   1.0%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   4s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.7%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   5s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.6%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   6s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.5%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   7s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.4%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   8s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.4%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   9s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.3%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  10s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.3%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  11s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.3%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  12s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.2%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  13s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.2%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  14s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.2%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  15s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.2%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  16s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.2%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  17s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.2%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  18s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.2%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  19s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |###.................|  15  total   0.9%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  20s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.9%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  21s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.9%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  22s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.8%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  23s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   3  total   0.9%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  24s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.9%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  25s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.8%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  26s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.8%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  27s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.8%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  28s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.7%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  29s] guard ARMED        offenders@prio 25  offender work/s 0
+        control             misses/s |....................|   0  total   0.7%  worst   16.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+
+=== DeadlineWatch summary ===
+mode: local, guard: on, duration: 30s
+control [critical]: 3000 cycles judged (2979 completed), 21 misses (0.7%), longest miss streak 13 (130 ms), worst lateness 16118 us, mean -8994 us
+sensor: 600 cycles judged (600 completed), 0 misses (0.0%), longest miss streak 0 (0 ms), worst lateness 0 us, mean -49281 us
+throttle events: 0, offender final priority: 25, safe state: no
+log: docs/results/local-rogue-off.csv

@@ -1,0 +1,115 @@
+config: supervisor @prio 30, offenders demoted to prio 5 (tasks and offenders are other processes)
+config: mode=system guard=on rogue=n/a duration=36s safe_after=300ms safe_miss=50% rescue_boost=on log=docs/results/pump-C-safe-state-r2.csv
+deadline-watch: system mode, listening as /dev/name/local/deadline-watch (guard on)
+deadline-watch: start clients now, e.g. ./dw-pump & ./dw-rogue
+[   1s] guard ARMED        offenders@prio 25  offender work/s 0
+[   2s] guard ARMED        offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   0.0%  worst    0.0 ms
+        pump-pressure       misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   3s] guard ARMED        offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   0.0%  worst    0.0 ms
+        pump-pressure       misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   4s] guard ARMED        offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   0.0%  worst    0.0 ms
+        pump-pressure       misses/s |....................|   0  total   0.0%  worst    0.0 ms
+*** SAFE STATE: continuous-failure: pump-dose still failing with enforcement exhausted; safe state commanded; 1 critical thread(s) boosted to prio 29 ***
+[   5s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |######..............|  31  total   7.8%  worst    6.4 ms
+        pump-pressure       misses/s |##################..|  18  total  22.8%  worst    4.5 ms
+[   6s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   6.2%  worst    6.4 ms
+        pump-pressure       misses/s |####################|  20  total  38.4%  worst    4.5 ms
+[   7s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   5.2%  worst    6.4 ms
+        pump-pressure       misses/s |####################|  20  total  48.7%  worst    4.5 ms
+[   8s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   4.4%  worst    6.4 ms
+        pump-pressure       misses/s |####################|  20  total  56.1%  worst   10.1 ms
+[   9s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   3.9%  worst    6.4 ms
+        pump-pressure       misses/s |####################|  20  total  61.6%  worst   10.1 ms
+[  10s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   3.4%  worst    6.4 ms
+        pump-pressure       misses/s |####################|  20  total  65.9%  worst   10.1 ms
+[  11s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   3.1%  worst    6.4 ms
+        pump-pressure       misses/s |####################|  20  total  69.3%  worst   10.1 ms
+[  12s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   2  total   3.0%  worst    6.4 ms
+        pump-pressure       misses/s |####################|  20  total  72.1%  worst   10.1 ms
+[  13s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   2.8%  worst    6.4 ms
+        pump-pressure       misses/s |####################|  20  total  74.5%  worst   10.1 ms
+[  14s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   2.5%  worst    6.4 ms
+        pump-pressure       misses/s |####################|  20  total  76.4%  worst   10.1 ms
+[  15s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   2.4%  worst    6.4 ms
+        pump-pressure       misses/s |####################|  20  total  78.1%  worst   10.1 ms
+[  16s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   2.2%  worst    6.4 ms
+        pump-pressure       misses/s |####################|  20  total  79.6%  worst   10.1 ms
+[  17s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   2.1%  worst    6.4 ms
+        pump-pressure       misses/s |####################|  20  total  80.9%  worst   10.1 ms
+[  18s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |#...................|   6  total   2.3%  worst   21.6 ms
+        pump-pressure       misses/s |####################|  20  total  82.0%  worst   20.7 ms
+[  19s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   2.2%  worst   21.6 ms
+        pump-pressure       misses/s |####################|  20  total  83.0%  worst   20.7 ms
+[  20s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   2.1%  worst   21.6 ms
+        pump-pressure       misses/s |####################|  20  total  83.9%  worst   20.7 ms
+[  21s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   1.9%  worst   21.6 ms
+        pump-pressure       misses/s |####################|  20  total  84.7%  worst   20.7 ms
+[  22s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   1.9%  worst   21.6 ms
+        pump-pressure       misses/s |####################|  20  total  85.4%  worst   20.7 ms
+[  23s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   1.8%  worst   21.6 ms
+        pump-pressure       misses/s |####################|  20  total  86.1%  worst   20.7 ms
+[  24s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   1.7%  worst   21.6 ms
+        pump-pressure       misses/s |####################|  20  total  86.7%  worst   20.7 ms
+[  25s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |##..................|  11  total   2.1%  worst   21.6 ms
+        pump-pressure       misses/s |##..................|   2  total  83.3%  worst   20.7 ms
+[  26s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   2.0%  worst   21.6 ms
+        pump-pressure       misses/s |....................|   0  total  80.0%  worst   20.7 ms
+[  27s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   1.9%  worst   21.6 ms
+        pump-pressure       misses/s |....................|   0  total  76.9%  worst   20.7 ms
+[  28s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   1.9%  worst   21.6 ms
+        pump-pressure       misses/s |....................|   0  total  74.1%  worst   20.7 ms
+[  29s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   1.8%  worst   21.6 ms
+        pump-pressure       misses/s |....................|   0  total  71.4%  worst   20.7 ms
+[  30s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   1.7%  worst   21.6 ms
+        pump-pressure       misses/s |....................|   0  total  69.0%  worst   20.7 ms
+[  31s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   1.7%  worst   21.6 ms
+        pump-pressure       misses/s |....................|   0  total  66.7%  worst   20.7 ms
+[  32s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   1  total   1.6%  worst   21.6 ms
+        pump-pressure       misses/s |....................|   0  total  64.4%  worst   20.7 ms
+[  33s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose      EXIT misses/s |....................|   0  total   1.6%  worst   21.6 ms
+        pump-pressure  EXIT misses/s |....................|   0  total  64.3%  worst   20.7 ms
+[  34s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose      EXIT misses/s |....................|   0  total   1.6%  worst   21.6 ms
+        pump-pressure  EXIT misses/s |....................|   0  total  64.3%  worst   20.7 ms
+[  35s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose      EXIT misses/s |....................|   0  total   1.6%  worst   21.6 ms
+        pump-pressure  EXIT misses/s |....................|   0  total  64.3%  worst   20.7 ms
+
+=== DeadlineWatch summary ===
+mode: system, guard: on, duration: 36s
+pump-dose [critical]: 3106 cycles judged (3057 completed), 51 misses (1.6%), longest miss streak 31 (310 ms), worst lateness 21603 us, mean -8478 us
+pump-pressure: 622 cycles judged (222 completed), 400 misses (64.3%), longest miss streak 400 (20000 ms), worst lateness 20734 us, mean -48640 us
+throttle events: 0, offender final priority: 25, safe state: YES
+log: docs/results/pump-C-safe-state-r2.csv

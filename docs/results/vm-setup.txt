@@ -1,0 +1,26 @@
+How these logs were recorded (19 Nov 2026)
+
+Target:  QNX 8.0 (uname: QNX qnxvm 8.0.0 2026/10/30-09:10:05EDT x86pc x86_64)
+Image:   mkqnximage --type=qemu --arch=x86_64 --cpu=4 --ram=1G --ssh-ident=<key> --hostname=qnxvm
+Emulator: QEMU 10.0.13, TCG software emulation (NO KVM: /dev/kvm was not
+          accessible on the build host), 4 vCPUs, 1 GB RAM, user-mode
+          networking with ssh forwarded to 127.0.0.1:2222.
+Host:    8-core Intel Xeon Linux VM (shared, not a real-time host).
+Command: qemu-system-x86_64 -smp 4 -cpu max -m 1G \
+           -drive file=output/disk-qemu.vmdk,if=ide -kernel output/ifs.bin \
+           -netdev user,id=net0,hostfwd=tcp:127.0.0.1:2222-:22 \
+           -device virtio-net-pci,netdev=net0 -nographic -serial file:output/qemu.out
+Build:   qcc -Vgcc_ntox86_64 -Wall -Wextra -O2 (QNX SDP 8.0), zero warnings.
+Run:     as root in /data/dw: sh scripts/demo.sh local (LOCAL_DUTY=85 and 100)
+         and sh scripts/demo.sh pump (DUTY=100); DUR=30, REPS=3.
+
+Timeline (WAT = UTC+1; the guest clock is UTC):
+  15:39 WAT  recording started (local 85 % set, rogue-off-1)
+  ~15:48     the whole guest hung right after local-d100-guard-on-r2 printed
+             its summary (no ssh, 400 % host CPU for ~25 min). VM reset at
+             ~16:15 WAT. Cause not identified; see docs/RESULTS.md.
+  16:15      resumed: local 100 % set redone from scratch, then the pump set
+  16:26      finished
+
+This is emulation on a shared host. It shows the mechanism working on the
+real QNX 8.0 kernel; it is NOT a measurement of real-hardware timing.

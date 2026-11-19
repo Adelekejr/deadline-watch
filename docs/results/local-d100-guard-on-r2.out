@@ -1,0 +1,97 @@
+config: control 10 ms @prio 20, sensor 50 ms @prio 15, rogue 100% duty @prio 25 (demote to 5), supervisor @prio 30
+config: mode=local guard=on rogue=on duration=30s safe_after=300ms safe_miss=50% rescue_boost=on log=docs/results/local-d100-guard-on-r2.csv
+deadline-watch: local mode (4 rogue threads, guard on)
+[   1s] guard THROTTLED    offenders@prio 5   offender work/s 0
+        control             misses/s |....................|   3  total   3.0%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   2s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   1.5%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   3s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   1.0%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   4s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.7%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   5s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.6%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   6s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.5%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   7s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.4%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   8s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.4%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   9s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.3%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  10s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.3%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  11s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.3%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  12s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.2%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  13s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.2%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  14s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.2%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  15s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.2%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  16s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.2%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  17s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.2%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  18s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.2%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  19s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.2%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  20s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.1%  worst    2.7 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  21s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   3  total   0.3%  worst    7.6 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  22s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.3%  worst    7.6 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  23s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.3%  worst    7.6 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  24s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.2%  worst    7.6 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  25s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   0  total   0.2%  worst    7.6 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  26s] guard THROTTLED    offenders@prio 5   offender work/s 400
+        control             misses/s |....................|   2  total   0.3%  worst    7.6 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  27s] guard ESCALATED    offenders@prio 1   offender work/s 400
+        control             misses/s |#...................|   7  total   0.6%  worst   40.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  28s] guard ESCALATED    offenders@prio 1   offender work/s 400
+        control             misses/s |....................|   1  total   0.6%  worst   40.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[  29s] guard ESCALATED    offenders@prio 1   offender work/s 400
+        control             misses/s |....................|   0  total   0.6%  worst   40.1 ms
+        sensor              misses/s |....................|   0  total   0.0%  worst    0.0 ms
+
+=== DeadlineWatch summary ===
+mode: local, guard: on, duration: 30s
+control [critical]: 3000 cycles judged (2986 completed), 16 misses (0.5%), longest miss streak 6 (60 ms), worst lateness 40146 us, mean -8734 us
+sensor: 600 cycles judged (600 completed), 0 misses (0.0%), longest miss streak 0 (0 ms), worst lateness 0 us, mean -48497 us
+throttle events: 1, offender final priority: 1, safe state: no
+log: docs/results/local-d100-guard-on-r2.csv

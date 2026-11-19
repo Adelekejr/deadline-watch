@@ -42,7 +42,7 @@ watches whether the deadlines are actually being met at run time.
 **Local mode** (default, `./deadline-watch`): one process with the
 supervisor, a 10 ms control loop, a 50 ms sensor and a deliberately
 greedy rogue (one thread per online CPU, priority above the control
-loop). This is the mode the recorded QEMU numbers come from.
+loop). Both modes were recorded on QNX 8.0 (see Results).
 
 **System mode** (`./deadline-watch --mode=system`): the supervisor
 publishes the name `deadline-watch` and guards **other processes**. Any
@@ -72,7 +72,8 @@ are included:
   motor and latches an alarm. It also fails safe if the supervisor
   disappears.
 - [`examples/rogue.c`](examples/rogue.c) → `dw-rogue`: a separate runaway
-  process at priority 25, 85 % duty per thread, registered or not
+  process at priority 25, one thread per CPU, 100 % duty by default
+  (`--duty=` to change), registered or not
   (`--register=off`).
 
 ## How it uses QNX 8.0
@@ -93,22 +94,28 @@ QNX OS 8.0 does not support APS (8.0 `SchedCtl()` lists only CPU
 offlining commands, and the IDE guide says so). Enforcement is therefore
 by strict-priority scheduling. Details: [docs/design-8.0.md](docs/design-8.0.md).
 
-## Results so far (local mode, QEMU/TCG, 30 s runs, 2 rogue threads)
+## Results
 
-| Run | Guard | Control-loop misses |
-|---|---|---|
-| Rogue off | on | 0.1–0.6 % |
-| Rogue on | off | 22.6–54.3 % |
-| Rogue on | on | 4.7–20.5 %, rogue throttled and logged every time |
+Recorded on 19 Nov 2026, 30 s per run, 3 runs per scenario, rogue at
+100 % duty on 4 threads. Mean across the 3 runs, range in brackets. All
+numbers are generated from the committed logs by `host/results_table.py`.
 
-Four guard-off / guard-on pairs: 38.9 / 9.8, 22.6 / 4.7, 35.5 / 19.6,
-54.3 / 20.5 %. Percentages move with host load under software
-emulation, so the claim is the improvement: the guard cuts misses
-roughly 2–5× and throttles the rogue every time. These runs used the
-previous version of the code, whose "85 %" rogue was actually 80 % (now
-fixed). The cross-process pump scenarios have **not been recorded on
-QNX yet**. Full numbers, method and what is still to re-record:
-[docs/RESULTS.md](docs/RESULTS.md).
+| Pump scenario (3 processes) | Dose-loop misses during the 20 s attack | Longest outage | Guard action | Final dose error |
+|---|---|---|---|---|
+| A: guard off | 99.7 % (99.4–99.8) | 20 s, the whole attack | none | −59.6 %, worst −85 %, **no alarm** |
+| B: guard on, rogue registered as demotable | 0.7 % (0.2–1.5) | 30–150 ms | THROTTLE 9–10 ms after the first miss | 0.0 % (worst −3.4 %) |
+| C: guard on, nothing it can demote | 1.9 % (1.8–1.9) | 310 ms | SAFE_STATE 290 ms after the first miss (3/3): motor stopped, alarm latched | −89.9 % (therapy stopped on purpose, with an alarm) |
+| C′: guard on, uncooperative rogue named by `--demote-pid` | 0.6 % (0.3–0.7) | 40–60 ms | THROTTLE by pid, new rogue threads re-demoted | 0.0 % (worst −1.6 %) |
+
+Local mode (one process): guard off 100 % control-loop misses (3/3
+runs); guard on 0.3–0.8 % with THROTTLE at 30 ms; rogue off 0.1–0.7 %.
+
+![Simulated infusion pump: guard off vs guard on, run r1](docs/results/pump-timeline-r1.png)
+
+![Mean of 3 runs per scenario](docs/results/pump-summary.png)
+
+Tests ran on QNX 8.0 in QEMU (software emulation); timing on real hardware is expected to be tighter.
+Full tables, all graphs, method and notes: [docs/RESULTS.md](docs/RESULTS.md).
 
 ## Build
 
@@ -169,7 +176,7 @@ make host-check
 ```
 
 Compiles every C file with `gcc -Wall -Wextra -Werror` against stub QNX
-headers (`tests/qnx-stubs/`, declarations only), runs 39 unit checks of
+headers (`tests/qnx-stubs/`, declarations only), runs 46 unit checks of
 the deadline policy (`tests/test_core.c`: miss accounting, the
 THROTTLE → ESCALATE → SAFE_STATE ladder timing, recovery, lost
 clients), and runs the `render.py` self-test. This proves the code is
@@ -189,25 +196,22 @@ examples/pump.c      simulated infusion pump (critical client)
 examples/rogue.c     separate runaway process (offender)
 scripts/demo.sh      runs all scenarios in the guest, saves logs
 host/render.py       summary, jitter plot, live --follow view, --self-test
+host/results_table.py  RESULTS.md tables from the logs
+host/plot_scenarios.py graphs in docs/results/ from the logs
 tests/               policy unit tests + stub QNX headers for host compile
 docs/                design-8.0.md, RESULTS.md, results/
 ```
 
 ## Honest limits
 
-- System mode, the pump/rogue examples, `--demote-pid`, the safe state
-  and the rescue boost compile cleanly on the host but **have not yet
-  been run on QNX**. Until they are, treat them as unverified.
 - Priority demotion is not a CPU budget (that was APS, gone in 8.0).
 - A fully starved thread cannot act on any command. The rescue boost
   helps registered critical threads; a real device would also have an
   independent hardware watchdog.
 - The pump is a teaching simulation, not medical software.
-- QEMU/TCG host stalls (up to ~185 ms observed) cause misses with no
-  thread at fault; the safe-state thresholds are set above that.
 - The live view costs the supervisor one short `write()` per second;
   use `--live=off` for the cleanest timing measurements. (The recorded
-  runs predate the live view.)
+  runs had the live view on.)
 - Workload sizes (`control_work_iters`, `--work`) are stand-ins; calibrate
   on the target so the control work takes about 1 ms.
 

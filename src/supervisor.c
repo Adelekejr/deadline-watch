@@ -83,6 +83,21 @@ static int dw_demote_pid(int pid, int prio)
     return ok;
 }
 
+/* --demote-pid must never hit the supervisor itself or a process that
+ * registered a deadline-tracked task (e.g. the pump): demoting those would
+ * starve exactly what the guard protects. */
+static int dw_pid_protected(const dw_ctx_t *ctx, int pid)
+{
+    if (pid == (int)getpid())
+        return 1;
+    for (int ti = 0; ti < DW_MAX_TASKS; ti++) {
+        const dw_task_t *t = &ctx->core.task[ti];
+        if (t->active && t->pid == pid)
+            return 1;
+    }
+    return 0;
+}
+
 static void dw_demote_all(dw_ctx_t *ctx, int prio, int *ok_out, int *total_out,
                           int *err_out)
 {
@@ -99,7 +114,14 @@ static void dw_demote_all(dw_ctx_t *ctx, int prio, int *ok_out, int *total_out,
             err = rc;
     }
     for (int i = 0; i < ctx->cfg.n_demote_pids; i++) {
+        if (dw_pid_protected(ctx, ctx->cfg.demote_pids[i])) {
+            total++;
+            if (!err)
+                err = EPERM;
+            continue;
+        }
         int n = dw_demote_pid(ctx->cfg.demote_pids[i], prio);
+        ctx->pid_threads[i] = n;
         ok += n;
         total += n > 0 ? n : 1;
         if (n == 0 && !err)
@@ -109,6 +131,24 @@ static void dw_demote_all(dw_ctx_t *ctx, int prio, int *ok_out, int *total_out,
     *ok_out = ok;
     *total_out = total;
     *err_out = err;
+}
+
+static void dw_redemote_pids(dw_ctx_t *ctx, const struct timespec *now)
+{
+    for (int i = 0; i < ctx->cfg.n_demote_pids; i++) {
+        if (dw_pid_protected(ctx, ctx->cfg.demote_pids[i]))
+            continue;
+        int n = dw_demote_pid(ctx->cfg.demote_pids[i], ctx->rogue_prio_current);
+        if (n > ctx->pid_threads[i]) {
+            char detail[128];
+            snprintf(detail, sizeof(detail),
+                     "pid %d has %d new thread(s): demoted to prio %d",
+                     ctx->cfg.demote_pids[i], n - ctx->pid_threads[i],
+                     ctx->rogue_prio_current);
+            dw_log_row(ctx, now, "supervisor", "THROTTLE", 0, 0, 0, detail);
+        }
+        ctx->pid_threads[i] = n;
+    }
 }
 
 static void dw_refresh_targets(dw_ctx_t *ctx)
@@ -313,6 +353,20 @@ static void dw_handle_msg(dw_ctx_t *ctx, long rcvid,
         if (m->value > 0 && m->value < 1000000)
             ctx->rogue_progress += (long)m->value;
         r.slot = m->slot;
+    } else if (m->req == DW_REQ_UNREGISTER && m->slot >= 0 &&
+               m->slot < DW_MAX_TASKS && ctx->core.task[m->slot].active &&
+               ctx->core.task[m->slot].scoid == info->scoid) {
+        dw_core_unregister(&ctx->core, m->slot, now);
+        r.slot = m->slot;
+    } else if (m->req == DW_REQ_UNREGISTER && m->slot >= DW_MAX_TASKS &&
+               m->slot < DW_MAX_TASKS + ctx->n_target &&
+               ctx->target[m->slot - DW_MAX_TASKS].active &&
+               ctx->target[m->slot - DW_MAX_TASKS].scoid == info->scoid) {
+        dw_target_t *t = &ctx->target[m->slot - DW_MAX_TASKS];
+        t->active = 0;
+        dw_refresh_targets(ctx);
+        dw_log_row(ctx, now, t->name, "UNREGISTER", 0, 0, 0, "clean exit");
+        r.slot = m->slot;
     } else {
         r.status = EPERM;   /* unknown slot, or not the connection that owns it */
     }
@@ -380,7 +434,9 @@ static void dw_live_line(dw_ctx_t *ctx, const struct timespec *now)
         n += (size_t)snprintf(buf + n, sizeof(buf) - n,
                               "        %-14s %s misses/s |%s| %3ld  "
                               "total %5.1f%%  worst %6.1f ms\n",
-                              t->name, t->active ? "    " : "LOST", b,
+                              t->name,
+                              t->gone == 2 ? "LOST" : t->gone == 1 ? "EXIT" : "    ",
+                              b,
                               new_miss, pct,
                               (double)t->worst_lateness_us / 1000.0);
     }
@@ -463,6 +519,13 @@ int dw_supervisor_run(dw_ctx_t *ctx)
                 break;
             case DW_PULSE_TIMER:
                 acts = dw_core_tick(&ctx->core, &now);
+                /* A --demote-pid process may create threads after it was
+                   demoted (seen on QNX: a rogue that starts its burners
+                   late escaped a THROTTLE that came first). Every 50 ms
+                   while throttled, re-apply the demotion to the whole pid. */
+                if (++ctx->tick_count % 50 == 0 && ctx->core.throttled &&
+                    !ctx->core.safe_state)
+                    dw_redemote_pids(ctx, &now);
                 if (dw_diff_us(&ctx->last_second, &now) >= 1000000L)
                     dw_second(ctx, &now);
                 if (ctx->cfg.duration_s > 0 &&
@@ -621,13 +684,19 @@ static void dw_print_summary(const dw_ctx_t *ctx)
         const dw_task_t *st = &ctx->core.task[i];
         if (!st->name[0])
             continue;
-        double miss_pct = st->cycles > 0
-            ? 100.0 * (double)st->misses / (double)st->cycles : 0.0;
+        /* Miss % is over cycles JUDGED (completed + starved/skipped),
+           i.e. every period that elapsed, not just completed cycles. */
+        long judged = st->expected_cycle;
+        double miss_pct = judged > 0
+            ? 100.0 * (double)st->misses / (double)judged : 0.0;
         long mean = st->cycles > 0 ? st->total_lateness_us / st->cycles : 0;
-        printf("%s%s: %ld cycles, %ld misses (%.1f%%), worst lateness %ld us, "
+        printf("%s%s: %ld cycles judged (%ld completed), %ld misses (%.1f%%), "
+               "longest miss streak %ld (%ld ms), worst lateness %ld us, "
                "mean %ld us\n",
                st->name, st->role == DW_ROLE_CRITICAL ? " [critical]" : "",
-               st->cycles, st->misses, miss_pct, st->worst_lateness_us, mean);
+               judged, st->cycles, st->misses, miss_pct,
+               st->max_consecutive, st->max_consecutive * st->period_ms,
+               st->worst_lateness_us, mean);
     }
     printf("throttle events: %ld, offender final priority: %d, safe state: %s\n",
            ctx->core.throttle_events, ctx->rogue_prio_current,
@@ -659,6 +728,29 @@ int main(int argc, char **argv)
     dw_clamp_prio(&ctx.cfg.sensor_prio, pmin, pmax, "sensor");
     dw_clamp_prio(&ctx.cfg.rogue_prio, pmin, pmax, "rogue");
     dw_clamp_prio(&ctx.cfg.rogue_demoted_prio, pmin, pmax, "rogue-demoted");
+    for (int i = 0; i < ctx.cfg.n_demote_pids; i++) {
+        if (ctx.cfg.demote_pids[i] == (int)getpid()) {
+            fprintf(stderr, "deadline-watch: --demote-pid=%d is this supervisor\n",
+                    ctx.cfg.demote_pids[i]);
+            return 2;
+        }
+    }
+    if (ctx.cfg.mode == DW_MODE_LOCAL &&
+        (ctx.cfg.supervisor_prio <= ctx.cfg.control_prio ||
+         ctx.cfg.supervisor_prio <= ctx.cfg.sensor_prio ||
+         ctx.cfg.supervisor_prio <= ctx.cfg.rogue_prio)) {
+        fprintf(stderr, "deadline-watch: supervisor priority %d must be above "
+                "every watched thread\n", ctx.cfg.supervisor_prio);
+        return 2;
+    }
+    if (ctx.cfg.rogue_demoted_prio >= ctx.cfg.supervisor_prio ||
+        (ctx.cfg.mode == DW_MODE_LOCAL &&
+         ctx.cfg.rogue_demoted_prio >= ctx.cfg.control_prio)) {
+        fprintf(stderr, "deadline-watch: demoted priority %d must be below the "
+                "supervisor%s\n", ctx.cfg.rogue_demoted_prio,
+                ctx.cfg.mode == DW_MODE_LOCAL ? " and the control loop" : "");
+        return 2;
+    }
     dw_config_print(&ctx.cfg);
 
     /* SIGINT/SIGTERM end the run cleanly (summary + flushed log). The

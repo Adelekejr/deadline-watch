@@ -1,0 +1,26 @@
+# Live supervisor view, scenario C run r1 (QNX 8.0 in QEMU/TCG). Excerpt of pump-C-safe-state-r1-supervisor.out, unedited.
+config: supervisor @prio 30, offenders demoted to prio 5 (tasks and offenders are other processes)
+config: mode=system guard=on rogue=n/a duration=36s safe_after=300ms safe_miss=50% rescue_boost=on log=docs/results/pump-C-safe-state-r1.csv
+deadline-watch: system mode, listening as /dev/name/local/deadline-watch (guard on)
+deadline-watch: start clients now, e.g. ./dw-pump & ./dw-rogue
+[   1s] guard ARMED        offenders@prio 25  offender work/s 0
+[   2s] guard ARMED        offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   0.0%  worst    0.0 ms
+        pump-pressure       misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   3s] guard ARMED        offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   0.0%  worst    0.0 ms
+        pump-pressure       misses/s |....................|   0  total   0.0%  worst    0.0 ms
+[   4s] guard ARMED        offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   0.0%  worst    0.0 ms
+        pump-pressure       misses/s |....................|   0  total   0.0%  worst    0.0 ms
+*** SAFE STATE: continuous-failure: pump-dose still failing with enforcement exhausted; safe state commanded; 1 critical thread(s) boosted to prio 29 ***
+[   5s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |######..............|  31  total   7.8%  worst    3.2 ms
+        pump-pressure       misses/s |##################..|  18  total  22.8%  worst    3.5 ms
+[   6s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   6.2%  worst    3.2 ms
+        pump-pressure       misses/s |####################|  20  total  38.4%  worst    3.5 ms
+[   7s] guard SAFE STATE   offenders@prio 25  offender work/s 0
+        pump-dose           misses/s |....................|   0  total   5.2%  worst    3.2 ms
+        pump-pressure       misses/s |####################|  20  total  48.7%  worst    3.5 ms
+[   8s] guard SAFE STATE   offenders@prio 25  offender work/s 0

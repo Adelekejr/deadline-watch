@@ -31,7 +31,7 @@ import time
 
 
 EVENTS_SHOWN = ("THROTTLE", "ESCALATE", "SAFE_STATE", "RECOVER", "REGISTER",
-                "LOST")
+                "UNREGISTER", "LOST")
 
 
 def parse_line(line):
@@ -78,7 +78,15 @@ def critical_task(rows):
 def summarise(rows):
     stats = {}
     throttles = []
+    streak = {}
     for r in rows:
+        if r["event"] in ("CYCLE", "MISS"):
+            missed = r["event"] == "MISS" or r["lateness_us"] > 0
+            cur = streak.get(r["thread"], 0) + 1 if missed else 0
+            streak[r["thread"]] = cur
+            s0 = stats.setdefault(r["thread"], {
+                "cycles": 0, "misses": 0, "worst": 0, "total": 0})
+            s0["max_streak"] = max(s0.get("max_streak", 0), cur)
         if r["event"] == "THROTTLE":
             throttles.append(r["t_ms"])
         if r["event"] == "CYCLE":
@@ -93,6 +101,7 @@ def summarise(rows):
             s = stats.setdefault(r["thread"], {
                 "cycles": 0, "misses": 0, "worst": 0, "total": 0})
             s["misses"] += 1
+            s["starved"] = s.get("starved", 0) + 1
             s["worst"] = max(s["worst"], r["lateness_us"])
     return stats, throttles
 
@@ -101,10 +110,14 @@ def print_summary(rows, stats, throttles):
     print("DeadlineWatch log summary")
     print("=========================")
     for thread, s in sorted(stats.items()):
-        miss_pct = 100.0 * s["misses"] / s["cycles"] if s["cycles"] else 0.0
+        # Miss % over cycles judged = completed (CYCLE) + starved/skipped (MISS).
+        judged = s["cycles"] + s.get("starved", 0)
+        miss_pct = 100.0 * s["misses"] / judged if judged else 0.0
         mean = s["total"] / s["cycles"] if s["cycles"] else 0
-        print(f"{thread}: {s['cycles']} cycles, {s['misses']} misses "
-              f"({miss_pct:.1f}%), worst {s['worst']} us, mean {mean:.0f} us")
+        print(f"{thread}: {judged} cycles judged ({s['cycles']} completed), "
+              f"{s['misses']} misses ({miss_pct:.1f}%), longest miss streak "
+              f"{s.get('max_streak', 0)}, worst {s['worst']} us, "
+              f"mean {mean:.0f} us")
     if throttles:
         print("throttle events at t = " +
               ", ".join(f"{t:.0f} ms" for t in throttles))

@@ -179,6 +179,8 @@ static int dw_core_miss(dw_core_t *c, int ti, long cycle,
     long late = (long)dw_diff_us(deadline, now);
     t->misses++;
     t->consecutive_misses++;
+    if (++t->streak > t->max_consecutive)
+        t->max_consecutive = t->streak;
     t->clean_cycles = 0;
     if (late > t->worst_lateness_us)
         t->worst_lateness_us = late;
@@ -193,6 +195,15 @@ int dw_core_report(dw_core_t *c, int ti, long cycle, const struct timespec *now)
         return DW_ACT_NONE;
     dw_task_t *t = &c->task[ti];
     int acts = DW_ACT_NONE;
+
+    /* A report for a cycle that has not started yet (more than one period
+       ahead of the clock) is bogus: a buggy client could otherwise make
+       the loop below log millions of "skipped" misses at the supervisor's
+       top priority. Integer-only bound, so a huge value cannot overflow
+       the deadline arithmetic. */
+    int64_t elapsed_ms = dw_diff_us(&t->epoch, now) / 1000;
+    if (elapsed_ms < 0 || cycle > elapsed_ms / t->period_ms + 1)
+        return DW_ACT_NONE;
 
     /* Cycles skipped before this one. The watchdog usually catches them
        first; this is the net. */
@@ -221,12 +232,15 @@ int dw_core_report(dw_core_t *c, int ti, long cycle, const struct timespec *now)
     if (late > 0) {
         t->misses++;
         t->consecutive_misses++;
+        if (++t->streak > t->max_consecutive)
+            t->max_consecutive = t->streak;
         t->clean_cycles = 0;
         acts |= dw_core_check(c, ti, now);
         acts |= dw_core_window(c, ti, 1, now);
     } else {
         acts |= dw_core_window(c, ti, 0, now);
         t->consecutive_misses = 0;
+        t->streak = 0;
         t->clean_cycles++;
         if (c->throttled && !c->recovered && !c->safe_state &&
             ti == c->trigger_task && t->clean_cycles >= c->recover_cycles) {
@@ -268,9 +282,21 @@ int dw_core_lost(dw_core_t *c, int ti, const struct timespec *now)
         return DW_ACT_NONE;
     dw_task_t *t = &c->task[ti];
     t->active = 0;
+    t->gone = 2;
     dw_core_log(c, now, t->name, "LOST", t->expected_cycle, 0,
                 t->worst_lateness_us, "task's process disconnected");
     if (t->role == DW_ROLE_CRITICAL)
         return dw_core_safe(c, ti, now, "lost");
     return DW_ACT_NONE;
+}
+
+void dw_core_unregister(dw_core_t *c, int ti, const struct timespec *now)
+{
+    if (ti < 0 || ti >= DW_MAX_TASKS || !c->task[ti].active)
+        return;
+    dw_task_t *t = &c->task[ti];
+    t->active = 0;
+    t->gone = 1;
+    dw_core_log(c, now, t->name, "UNREGISTER", t->expected_cycle, 0,
+                t->worst_lateness_us, "clean exit");
 }

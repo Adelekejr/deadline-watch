@@ -1,0 +1,12 @@
+dw-pump (SIMULATION, not a medical device): pid 2945044, rate 120.0 mL/h, dose loop 10 ms @prio 20
+[pump   1.0s] prescribed  0.0334 mL  delivered  0.0337 mL  dose error  +0.88%  line 23.9 kPa  infusing
+[pump   2.0s] prescribed  0.0668 mL  delivered  0.0670 mL  dose error  +0.34%  line 21.4 kPa  infusing
+[pump   3.0s] prescribed  0.1001 mL  delivered  0.1003 mL  dose error  +0.20%  line 22.7 kPa  infusing
+[pump  23.0s] prescribed  0.7680 mL  delivered  0.1017 mL  dose error -86.76%  line 21.7 kPa  ALARM: SAFE STATE (motor stopped by guard)
+[pump  24.0s] prescribed  0.8015 mL  delivered  0.1017 mL  dose error -87.32%  line 21.5 kPa  ALARM: SAFE STATE (motor stopped by guard)
+[pump  25.0s] prescribed  0.8349 mL  delivered  0.1017 mL  dose error -87.82%  line 20.3 kPa  ALARM: SAFE STATE (motor stopped by guard)
+[pump  26.1s] prescribed  0.8683 mL  delivered  0.1017 mL  dose error -88.29%  line 23.2 kPa  ALARM: SAFE STATE (motor stopped by guard)
+[pump  27.1s] prescribed  0.9017 mL  delivered  0.1017 mL  dose error -88.73%  line 21.2 kPa  ALARM: SAFE STATE (motor stopped by guard)
+[pump  28.1s] prescribed  0.9351 mL  delivered  0.1017 mL  dose error -89.13%  line 23.3 kPa  ALARM: SAFE STATE (motor stopped by guard)
+[pump  29.1s] prescribed  0.9684 mL  delivered  0.1017 mL  dose error -89.50%  line 20.2 kPa  ALARM: SAFE STATE (motor stopped by guard)
+[pump  30.1s] prescribed  1.0018 mL  delivered  0.1017 mL  dose error -89.85%  line 22.1 kPa  ALARM: SAFE STATE (motor stopped by guard)

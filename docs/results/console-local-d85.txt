@@ -1,0 +1,28 @@
+== local rogue-off: deadline-watch --rogue-duty=85 --rogue=off
+control [critical]: 3000 cycles judged (2998 completed), 2 misses (0.1%), longest miss streak 2 (20 ms), worst lateness 2660 us, mean -8408 us
+sensor: 600 cycles judged (600 completed), 0 misses (0.0%), longest miss streak 0 (0 ms), worst lateness 0 us, mean -48732 us
+throttle events: 0, offender final priority: 25, safe state: no
+== local d85-guard-off-r1: deadline-watch --rogue-duty=85 --guard=off
+control [critical]: 3000 cycles judged (2980 completed), 26 misses (0.9%), longest miss streak 4 (40 ms), worst lateness 3666 us, mean -7333 us
+sensor: 600 cycles judged (597 completed), 3 misses (0.5%), longest miss streak 3 (150 ms), worst lateness 2630 us, mean -47194 us
+throttle events: 0, offender final priority: 25, safe state: no
+== local d85-guard-on-r1: deadline-watch --rogue-duty=85 --guard=on
+control [critical]: 3000 cycles judged (2997 completed), 3 misses (0.1%), longest miss streak 3 (30 ms), worst lateness 17851 us, mean -8593 us
+sensor: 600 cycles judged (600 completed), 0 misses (0.0%), longest miss streak 0 (0 ms), worst lateness 0 us, mean -48924 us
+throttle events: 1, offender final priority: 5, safe state: no
+== local d85-guard-off-r2: deadline-watch --rogue-duty=85 --guard=off
+control [critical]: 3000 cycles judged (2995 completed), 6 misses (0.2%), longest miss streak 2 (20 ms), worst lateness 7499 us, mean -7462 us
+sensor: 600 cycles judged (600 completed), 0 misses (0.0%), longest miss streak 0 (0 ms), worst lateness 0 us, mean -47397 us
+throttle events: 0, offender final priority: 25, safe state: no
+== local d85-guard-on-r2: deadline-watch --rogue-duty=85 --guard=on
+control [critical]: 6022 cycles judged (2248 completed), 3774 misses (62.7%), longest miss streak 3768 (37680 ms), worst lateness 37673944 us, mean -8647 us
+sensor: 1204 cycles judged (451 completed), 753 misses (62.5%), longest miss streak 753 (37650 ms), worst lateness 37623944 us, mean -48913 us
+throttle events: 1, offender final priority: 1, safe state: YES
+== local d85-guard-off-r3: deadline-watch --rogue-duty=85 --guard=off
+control [critical]: 3000 cycles judged (2265 completed), 744 misses (24.8%), longest miss streak 690 (6900 ms), worst lateness 6140582 us, mean -7241 us
+sensor: 600 cycles judged (458 completed), 142 misses (23.7%), longest miss streak 137 (6850 ms), worst lateness 6070582 us, mean -46760 us
+throttle events: 0, offender final priority: 25, safe state: no
+== local d85-guard-on-r3: deadline-watch --rogue-duty=85 --guard=on
+control [critical]: 3000 cycles judged (2913 completed), 90 misses (3.0%), longest miss streak 15 (150 ms), worst lateness 138583 us, mean -8809 us
+sensor: 600 cycles judged (590 completed), 10 misses (1.7%), longest miss streak 3 (150 ms), worst lateness 88583 us, mean -48737 us
+throttle events: 1, offender final priority: 1, safe state: no

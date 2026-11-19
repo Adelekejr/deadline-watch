@@ -4,6 +4,7 @@
  * MsgSend() (<sys/neutrino.h>).
  */
 #define _POSIX_C_SOURCE 200809L
+#define _QNX_SOURCE          /* QNX extensions: SIGEV_PULSE_INIT, _SC_NPROCESSORS_ONLN */
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -111,7 +112,9 @@ long dw_client_wait_next(const dw_client_t *c, long cycle)
 
 void dw_client_close(dw_client_t *c)
 {
-    if (c->coid != -1)
+    if (c->coid != -1) {
+        dw_client_send(c, DW_REQ_UNREGISTER, 0);  /* clean exit, not LOST */
         name_close(c->coid);
+    }
     c->coid = -1;
 }

@@ -1,0 +1,12 @@
+dw-pump (SIMULATION, not a medical device): pid 3112980, rate 120.0 mL/h, dose loop 10 ms @prio 20
+[pump   1.0s] prescribed  0.0334 mL  delivered  0.0337 mL  dose error  +0.93%  line 20.6 kPa  infusing
+[pump   2.0s] prescribed  0.0667 mL  delivered  0.0670 mL  dose error  +0.41%  line 21.4 kPa  infusing
+[pump   3.0s] prescribed  0.1001 mL  delivered  0.1003 mL  dose error  +0.24%  line 22.7 kPa  infusing
+[pump  23.0s] prescribed  0.7680 mL  delivered  0.1010 mL  dose error -86.85%  line 21.7 kPa  infusing
+[pump  24.0s] prescribed  0.8016 mL  delivered  0.1439 mL  dose error -82.05%  line 21.5 kPa  infusing
+[pump  25.0s] prescribed  0.8350 mL  delivered  0.1871 mL  dose error -77.59%  line 20.3 kPa  infusing
+[pump  26.1s] prescribed  0.8684 mL  delivered  0.2309 mL  dose error -73.41%  line 23.2 kPa  infusing
+[pump  27.1s] prescribed  0.9017 mL  delivered  0.2742 mL  dose error -69.60%  line 21.2 kPa  infusing
+[pump  28.1s] prescribed  0.9351 mL  delivered  0.3174 mL  dose error -66.05%  line 23.3 kPa  infusing
+[pump  29.1s] prescribed  0.9685 mL  delivered  0.3607 mL  dose error -62.75%  line 20.2 kPa  infusing
+[pump  30.1s] prescribed  1.0018 mL  delivered  0.4040 mL  dose error -59.67%  line 22.1 kPa  infusing
